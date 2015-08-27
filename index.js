@@ -15,7 +15,10 @@ const drivers = {
 function view (count$) {
   return count$
     .map((count) => (
-      h('p', `Count: ${count}`)
+      h('.widget', [
+        h('span.count', `Count: ${count}`),
+        h('button.increment', 'Increment')
+      ])
     )
   );
 }
@@ -28,7 +31,7 @@ function model (click$) {
 }
 
 function intent (DOM) {
-  return DOM.get('p', 'click');
+  return DOM.get('.increment', 'click');
 }
 
 function getCurrentTime () {
@@ -62,12 +65,40 @@ function renderStream (currentTime, streamValues) {
   );
 }
 
+function getMousePosition (ev) {
+  return {
+    x: ev.clientX,
+    y: ev.clientY
+  };
+}
+
+function calculateTimestamp (time, mouseX) {
+  return time - (mouseX / document.documentElement.clientWidth) * 5000;
+}
+
 function logStreams (DOM, streams) {
   const timeTravel = {};
 
   const playing$ = DOM.get('.pause', 'click')
     .scan((previous, _) => !previous, true)
     .startWith(true);
+
+  const paused$ = playing$.map(playing => !playing);
+
+  const mousePosition$ = DOM.get('.time-travel', 'mousemove')
+    .map(getMousePosition);
+
+  const click$ = DOM.get('.time-travel', 'click');
+
+  const time$ = Rx.Observable.interval(16).map(getCurrentTime)
+    .startWith(getCurrentTime());
+
+  const timeTravelPosition$ = click$.map(log('click'))
+    .withLatestFrom(mousePosition$, time$, (click, mousePosition, time) => {
+      return calculateTimestamp(time, mousePosition.x);
+    });
+
+  const wowSuchCurrentTime$ = time$.pausable(playing$).merge(timeTravelPosition$);
 
   const loggedStreams = streams.map(streamInfo => {
     return streamInfo.stream
@@ -86,15 +117,15 @@ function logStreams (DOM, streams) {
 
   loggedStreams.forEach((loggedStream, index) => {
     timeTravel[streams[index].label] = loggedStream
+      .withLatestFrom(wowSuchCurrentTime$, (values, time) => ({values, time}))
+      .map(({values, time}) => (values.filter((value, index) => value.timeStamp < time || index === values.length - 1)))
       .filter(values => values[values.length - 1].value !== undefined)
+      .map(log('I hope this updates'))
       .map(values => values[values.length - 1].value);
   });
 
-  const time = Rx.Observable.interval(16).map(getCurrentTime)
-    .startWith(getCurrentTime()).pausable(playing$);
-
   return {
-    DOM: Rx.Observable.combineLatest(...loggedStreams, time, playing$)
+    DOM: Rx.Observable.combineLatest(...loggedStreams, wowSuchCurrentTime$, playing$)
       .map((things) => {
         const streamValues = things.slice(0, things.length - 2);
         const currentTime = things[things.length - 2];
@@ -119,10 +150,10 @@ function main ({DOM}) {
     {stream: count$, label: 'count$'},
     {stream: count$.debounce(600), label: 'count$.debounce(600ms)'},
     {stream: count$.sample(600), label: 'count$.sample(600ms)'},
-    {stream: userIntent, label: 'clicks'}
+    {stream: userIntent, label: 'click$'}
   ]);
 
-  const app = view(model(streamLogs.timeTravel.clicks));
+  const app = view(model(streamLogs.timeTravel.click$));
 
   return {
     DOM: Rx.Observable.combineLatest(app, streamLogs.DOM)
