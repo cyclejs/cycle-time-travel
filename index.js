@@ -36,7 +36,7 @@ function getCurrentTime () {
 }
 
 function calculateValuePosition (currentTime, streamValue) {
-  const occurrenceTimeAgoInMs = currentTime - streamValue.occurredAt;
+  const occurrenceTimeAgoInMs = currentTime - streamValue.timestamp;
 
   return (100 - (occurrenceTimeAgoInMs / 50));
 }
@@ -62,30 +62,40 @@ function renderStream (currentTime, streamValues) {
   );
 }
 
-function logStreams (streams) {
+function logStreams (DOM, streams) {
+  const playing$ = DOM.get('.pause', 'click')
+    .scan((previous, _) => !previous, true)
+    .startWith(true);
+
   const loggedStreams = streams.map(streamInfo => {
     return streamInfo.stream
       .startWith([])
+      .pausable(playing$)
+      .timestamp()
       .scan((events, newEvent) => {
-        const newEvents = events.concat([
-          {occurredAt: getCurrentTime(), value: newEvent}
-        ]);
+        const newEvents = events.concat([newEvent]);
 
         newEvents.label = streamInfo.label;
 
         return newEvents;
-      });
+      }, []
+    );
   });
 
   const time = Rx.Observable.interval(16).map(getCurrentTime)
-    .startWith(getCurrentTime());
+    .startWith(getCurrentTime()).pausable(playing$);
 
   return {
-    DOM: Rx.Observable.combineLatest(...loggedStreams, time)
+    DOM: Rx.Observable.combineLatest(...loggedStreams, time, playing$)
       .map((things) => {
-        const streamValues = things.slice(0, things.length - 1);
-        const currentTime = things[things.length - 1];
-        return h('.time-travel', streamValues.map(renderStream.bind(null, currentTime)));
+        const streamValues = things.slice(0, things.length - 2);
+        const currentTime = things[things.length - 2];
+        const playing = things[things.length - 1];
+
+        return h('.time-travel', [
+          h('button.pause', playing ? 'Pause' : 'Play'),
+          ...streamValues.map(renderStream.bind(null, currentTime))
+        ]);
       }
     )
   };
@@ -95,10 +105,10 @@ function main ({DOM}) {
   const userIntent = intent(DOM);
   const count$ = model(userIntent);
 
-  const streamLogs = logStreams([
+  const streamLogs = logStreams(DOM, [
     {stream: count$, label: 'count'},
     {stream: count$.debounce(600), label: 'count.debounce(600ms)'},
-    {stream: count$.sample(600), label: 'count.sample(600ms)'},
+    {stream: count$.sample(600), label: 'count.sample(600ms)'}
   ]);
   const app = view(count$);
 
