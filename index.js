@@ -14,7 +14,7 @@ const drivers = {
 
 function view (count$) {
   return count$
-    .map(count => (
+    .map((count) => (
       h('p', `Count: ${count}`)
     )
   );
@@ -31,9 +31,40 @@ function intent (DOM) {
   return DOM.get('p', 'click');
 }
 
-function main ({DOM}) {
+function logStreams (streams) {
+  const loggedStreams = streams.map(stream => {
+    return stream
+      .startWith([])
+      .scan((events, newEvent) => {
+        return events.concat([
+          {occurredAt: new Date().getTime(), ...newEvent}
+        ]);
+      });
+  });
+
   return {
-    DOM: view(model(intent(DOM)))
+    DOM: Rx.Observable.combineLatest.apply(null, loggedStreams)
+      .map(streamValues => (
+        streamValues.map(values => (
+          h('.stream', JSON.stringify(values))
+        ))
+      )
+    )
+  };
+}
+
+function main ({DOM}) {
+  const userIntent = intent(DOM);
+
+  const streamLogs = logStreams([userIntent]);
+  const app = view(model(userIntent));
+
+  return {
+    DOM: Rx.Observable.combineLatest(app, streamLogs.DOM)
+      .map(vtrees => (
+        h('.app', vtrees)
+      )
+    )
   };
 }
 
