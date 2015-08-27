@@ -1,0 +1,28 @@
+{
+  "name": "cycle-time-travel",
+  "version": "0.0.1",
+  "description": "A time travelling debugger for Cycle.js",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Widdershin/cycle-time-travel.git"
+  },
+  "keywords": [
+    "cycle.js",
+    "debugger",
+    "time",
+    "travel"
+  ],
+  "author": "Nick Johnstone",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Widdershin/cycle-time-travel/issues"
+  },
+  "homepage": "https://github.com/Widdershin/cycle-time-travel"
+}
