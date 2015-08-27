@@ -31,33 +31,63 @@ function intent (DOM) {
   return DOM.get('p', 'click');
 }
 
+function getCurrentTime () {
+  return new Date().getTime();
+}
+
+function calculateValuePosition (currentTime, streamValue) {
+  const occurrenceTimeAgoInMs = currentTime - streamValue.occurredAt;
+
+  return (100 - (occurrenceTimeAgoInMs / 50));
+}
+
+function renderStreamValue (currentTime, streamValue) {
+  const left = calculateValuePosition(currentTime, streamValue);
+
+  return (
+    h('.stream-value', {style: {left: left + '%'}}, JSON.stringify(streamValue.value))
+  );
+}
+
+function renderStream (currentTime, streamValues) {
+  return (
+    h('.stream',
+      streamValues.map(renderStreamValue.bind(null, currentTime))
+    )
+  );
+}
+
 function logStreams (streams) {
   const loggedStreams = streams.map(stream => {
     return stream
       .startWith([])
       .scan((events, newEvent) => {
         return events.concat([
-          {occurredAt: new Date().getTime(), ...newEvent}
+          {occurredAt: getCurrentTime(), value: newEvent}
         ]);
       });
   });
 
+  const time = Rx.Observable.interval(16).map(getCurrentTime)
+    .startWith(getCurrentTime());
+
   return {
-    DOM: Rx.Observable.combineLatest.apply(null, loggedStreams)
-      .map(streamValues => (
-        streamValues.map(values => (
-          h('.stream', JSON.stringify(values))
-        ))
-      )
+    DOM: Rx.Observable.combineLatest(...loggedStreams, time)
+      .map((things) => {
+        const streamValues = things.slice(0, things.length - 1);
+        const currentTime = things[things.length - 1];
+        return h('.time-travel', streamValues.map(renderStream.bind(null, currentTime)));
+      }
     )
   };
 }
 
 function main ({DOM}) {
   const userIntent = intent(DOM);
+  const count$ = model(userIntent);
 
-  const streamLogs = logStreams([userIntent]);
-  const app = view(model(userIntent));
+  const streamLogs = logStreams([count$]);
+  const app = view(count$);
 
   return {
     DOM: Rx.Observable.combineLatest(app, streamLogs.DOM)
