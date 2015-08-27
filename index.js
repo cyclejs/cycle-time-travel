@@ -63,15 +63,17 @@ function renderStream (currentTime, streamValues) {
 }
 
 function logStreams (DOM, streams) {
+  const timeTravel = {};
+
   const playing$ = DOM.get('.pause', 'click')
     .scan((previous, _) => !previous, true)
     .startWith(true);
 
   const loggedStreams = streams.map(streamInfo => {
     return streamInfo.stream
+      .timestamp()
       .startWith([])
       .pausable(playing$)
-      .timestamp()
       .scan((events, newEvent) => {
         const newEvents = events.concat([newEvent]);
 
@@ -80,6 +82,12 @@ function logStreams (DOM, streams) {
         return newEvents;
       }, []
     );
+  });
+
+  loggedStreams.forEach((loggedStream, index) => {
+    timeTravel[streams[index].label] = loggedStream
+      .filter(values => values[values.length - 1].value !== undefined)
+      .map(values => values[values.length - 1].value);
   });
 
   const time = Rx.Observable.interval(16).map(getCurrentTime)
@@ -97,7 +105,9 @@ function logStreams (DOM, streams) {
           ...streamValues.map(renderStream.bind(null, currentTime))
         ]);
       }
-    )
+    ),
+
+    timeTravel
   };
 }
 
@@ -106,11 +116,13 @@ function main ({DOM}) {
   const count$ = model(userIntent);
 
   const streamLogs = logStreams(DOM, [
-    {stream: count$, label: 'count'},
-    {stream: count$.debounce(600), label: 'count.debounce(600ms)'},
-    {stream: count$.sample(600), label: 'count.sample(600ms)'}
+    {stream: count$, label: 'count$'},
+    {stream: count$.debounce(600), label: 'count$.debounce(600ms)'},
+    {stream: count$.sample(600), label: 'count$.sample(600ms)'},
+    {stream: userIntent, label: 'clicks'}
   ]);
-  const app = view(count$);
+
+  const app = view(model(streamLogs.timeTravel.clicks));
 
   return {
     DOM: Rx.Observable.combineLatest(app, streamLogs.DOM)
