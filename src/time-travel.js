@@ -86,7 +86,6 @@ function logStreams (DOM, streams) {
         dragging
       })
     ).scan((previousState, newState) => {
-      console.log(previousState, newState);
       let timeTravelDelta = 0;
 
       if (newState.dragging) {
