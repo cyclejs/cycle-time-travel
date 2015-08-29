@@ -55,7 +55,7 @@ function logStreams (DOM, streams) {
 
   const playing$ = DOM.get('.pause', 'click')
     .scan((previous, _) => !previous, true)
-    .startWith(true):
+    .startWith(true);
 
   const mousePosition$ = DOM.get('.time-travel', 'mousemove')
     .map(getMousePosition)
@@ -143,12 +143,8 @@ function logStreams (DOM, streams) {
   });
 
   return {
-    DOM: Rx.Observable.combineLatest(...loggedStreams, wowSuchCurrentTime$, playing$)
-      .map((things) => {
-        const streamValues = things.slice(0, things.length - 2);
-        const currentTime = things[things.length - 2];
-        const playing = things[things.length - 1];
-
+    DOM: Rx.Observable.combineLatest(wowSuchCurrentTime$, playing$, ...loggedStreams,
+      (currentTime, playing, ...streamValues) => {
         return h('.time-travel', [
           h('button.pause', playing ? 'Pause' : 'Play'),
           ...streamValues.map(renderStream.bind(null, currentTime))
@@ -159,3 +155,5 @@ function logStreams (DOM, streams) {
     timeTravel
   };
 }
+
+module.exports = logStreams;
