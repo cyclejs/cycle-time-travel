@@ -1,8 +1,6 @@
 const {Rx} = require('@cycle/core');
 const {h} = require('@cycle/dom');
 
-require('babel/register');
-
 function getCurrentTime () {
   if (window.appStartTime === undefined) {
     window.appStartTime = new Date().getTime();
