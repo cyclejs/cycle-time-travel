@@ -35,6 +35,10 @@ function intent (DOM) {
 }
 
 function getCurrentTime () {
+  if (window.appStartTime === undefined) {
+    window.appStartTime = new Date().getTime();
+  }
+
   return new Date().getTime();
 }
 
@@ -81,7 +85,8 @@ function logStreams (DOM, streams) {
 
   const playing$ = DOM.get('.pause', 'click')
     .scan((previous, _) => !previous, true)
-    .startWith(true);
+    .startWith(true)
+    .map(log('playing'));
 
   const mousePosition$ = DOM.get('.time-travel', 'mousemove')
     .map(getMousePosition)
@@ -95,16 +100,38 @@ function logStreams (DOM, streams) {
     release$.map(_ => false)
   ).startWith(false);
 
-  const time$ = Rx.Observable.interval(16)
-    .withLatestFrom(playing$, (_, playing) => ({realTime: getCurrentTime(), playing: playing}))
-    .scan((oldTime, currentTime) => {
+  const time$ = Rx.Observable.combineLatest(
+      Rx.Observable.interval(16),
+      playing$,
+      (_, playing) => ({realTime: getCurrentTime(), playing})
+    ).scan((oldTime, currentTime) => {
+
+      const pauseOffset = currentTime.realTime - oldTime.realTime;
+
       if (currentTime.playing) {
-        return currentTime;
+        if (oldTime.playing) {
+          return {
+            ...currentTime,
+            time: currentTime.realTime - oldTime.pauseOffset,
+            pauseOffset: oldTime.pauseOffset
+          };
+        }
+
+        return {
+          ...currentTime,
+          pauseOffset: oldTime.pauseOffset,
+          time: currentTime.realTime - oldTime.pauseOffset
+        };
       }
 
-      return oldTime;
-    })
-    .map(currentTime => currentTime.realTime)
+      return {
+        ...oldTime,
+        pauseOffset,
+        playing: false
+      };
+    }, {realTime: getCurrentTime(), pauseOffset: 0, playing: true})
+    .map(log('time'))
+    .map(currentTime => currentTime.time)
     .startWith(getCurrentTime());
 
   const timeTravelPosition$ = mousePosition$.pausable(dragging$)
