@@ -86,19 +86,18 @@ function logStreams (DOM, streams) {
   const playing$ = DOM.get('.pause', 'click')
     .scan((previous, _) => !previous, true)
     .startWith(true)
-    .map(log('playing'));
 
   const mousePosition$ = DOM.get('.time-travel', 'mousemove')
     .map(getMousePosition)
     .startWith({x: 0, y: 0});
 
-  const click$ = DOM.get('.time-travel', 'click');
-  const release$ = DOM.get('.time-travel', 'mouseup');
+  const click$ = DOM.get('.time-travel', 'mousedown').map(log('mousedown'));
+  const release$ = Rx.Observable.fromEvent(document.body, 'mouseup').map(log('release'));
 
   const dragging$ = Rx.Observable.merge(
     click$.map(_ => true),
     release$.map(_ => false)
-  ).startWith(false);
+  ).startWith(false).map(log('dragging'));
 
   const time$ = Rx.Observable.combineLatest(
       Rx.Observable.interval(16),
@@ -130,27 +129,28 @@ function logStreams (DOM, streams) {
         playing: false
       };
     }, {realTime: getCurrentTime(), pauseOffset: 0, playing: true})
-    .map(log('time'))
     .map(currentTime => currentTime.time)
     .startWith(getCurrentTime());
 
-  const timeTravelPosition$ = mousePosition$.pausable(dragging$)
+  const timeTravelPosition$ = mousePosition$
     .withLatestFrom(time$, (mousePosition, time) => {
       return calculateTimestamp(time, mousePosition.x);
-    }).startWith(0);
+    })
 
   const wowSuchCurrentTime$ = time$
-    .withLatestFrom(playing$, timeTravelPosition$, (time, playing, timeTravelPosition) => {
-      if (playing) {
-        return time;
+    .withLatestFrom(dragging$, timeTravelPosition$, (time, dragging, timeTravelPosition) => {
+      if (dragging) {
+        return timeTravelPosition;
       }
 
-      return timeTravelPosition;
-    }).startWith(getCurrentTime())
+      return time;
+    }).startWith(getCurrentTime());
 
   const loggedStreams = streams.map(streamInfo => {
     return streamInfo.stream
-      .timestamp()
+      .withLatestFrom(time$, (ev, time) => ({
+        timestamp: time, value: ev
+      }))
       .startWith([])
       .scan((events, newEvent) => {
         const newEvents = events.concat([newEvent]);
@@ -195,11 +195,7 @@ function main ({DOM}) {
   const count$ = model(userIntent);
 
   const streamLogs = logStreams(DOM, [
-    {stream: count$, label: 'count$'},
-    {stream: count$.throttle(600), label: 'count$.throttle(600ms)'},
-    {stream: count$.sample(600), label: 'count$.sample(600ms)'},
-    {stream: count$.sample(1200), label: 'count$.sample(1200ms)'},
-    {stream: userIntent, label: 'click$'}
+    {stream: count$, label: 'count$'}
   ]);
 
   const app = view(streamLogs.timeTravel.count$);
