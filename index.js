@@ -83,18 +83,32 @@ function logStreams (DOM, streams) {
     .scan((previous, _) => !previous, true)
     .startWith(true);
 
-  const paused$ = playing$.map(playing => !playing);
-
   const mousePosition$ = DOM.get('.time-travel', 'mousemove')
-    .map(getMousePosition);
+    .map(getMousePosition)
+    .startWith({x: 0, y: 0});
 
   const click$ = DOM.get('.time-travel', 'click');
+  const release$ = DOM.get('.time-travel', 'mouseup');
 
-  const time$ = Rx.Observable.interval(16).map(getCurrentTime)
+  const dragging$ = Rx.Observable.merge(
+    click$.map(_ => true),
+    release$.map(_ => false)
+  ).startWith(false);
+
+  const time$ = Rx.Observable.interval(16)
+    .withLatestFrom(playing$, (_, playing) => ({realTime: getCurrentTime(), playing: playing}))
+    .scan((oldTime, currentTime) => {
+      if (currentTime.playing) {
+        return currentTime;
+      }
+
+      return oldTime;
+    })
+    .map(currentTime => currentTime.realTime)
     .startWith(getCurrentTime());
 
-  const timeTravelPosition$ = click$
-    .withLatestFrom(mousePosition$, time$, (click, mousePosition, time) => {
+  const timeTravelPosition$ = mousePosition$.pausable(dragging$)
+    .withLatestFrom(time$, (mousePosition, time) => {
       return calculateTimestamp(time, mousePosition.x);
     }).startWith(0);
 
