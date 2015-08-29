@@ -33,8 +33,8 @@ function renderStream (currentTime, streamValues) {
   return (
     h('.stream', [
       h('.stream-title', streamValues.label),
-      h('.stream-marker', {style: {left: '72%'}}),
-      ...streamValues.map(renderStreamValue.bind(null, currentTime))
+      ...streamValues.map(renderStreamValue.bind(null, currentTime)),
+      h('.stream-marker', {style: {left: '72%'}})
     ])
   );
 }
@@ -47,7 +47,7 @@ function getMousePosition (ev) {
 }
 
 function calculateTimestamp (time, mouseX) {
-  return time - (mouseX / document.documentElement.clientWidth) * 5000;
+  return mouseX / document.documentElement.clientWidth * 5000;
 }
 
 function logStreams (DOM, streams) {
@@ -57,11 +57,11 @@ function logStreams (DOM, streams) {
     .scan((previous, _) => !previous, true)
     .startWith(true);
 
-  const mousePosition$ = DOM.get('.time-travel', 'mousemove')
+  const mousePosition$ = DOM.get('.stream', 'mousemove')
     .map(getMousePosition)
     .startWith({x: 0, y: 0});
 
-  const click$ = DOM.get('.time-travel', 'mousedown');
+  const click$ = DOM.get('.stream', 'mousedown');
   const release$ = Rx.Observable.fromEvent(document.body, 'mouseup');
 
   const dragging$ = Rx.Observable.merge(
@@ -69,43 +69,33 @@ function logStreams (DOM, streams) {
     release$.map(_ => false)
   ).startWith(false);
 
+  const timeTravelPosition$ = mousePosition$
+    .map(mousePosition => calculateTimestamp(mousePosition.x))
+    .withLatestFrom(dragging$, (timeTravel, dragging) => {
+      if (dragging) {
+        return timeTravel;
+      }
+
+      return 0;
+    });
+
+  // TODO - use requestAnimationFrame scheduler
   const time$ = Rx.Observable.combineLatest(
       Rx.Observable.interval(16),
       playing$,
-      (_, playing) => ({realTime: getCurrentTime(), playing})
-    ).scan((oldTime, currentTime) => {
+      (_, playing) => (playing)
+    ).scan((oldTime, playing) => {
+      const actualTime = getCurrentTime();
 
-      const pauseOffset = currentTime.realTime - oldTime.realTime;
-
-      if (currentTime.playing) {
-        if (oldTime.playing) {
-          return {
-            ...currentTime,
-            time: currentTime.realTime - oldTime.pauseOffset,
-            pauseOffset: oldTime.pauseOffset
-          };
-        }
-
-        return {
-          ...currentTime,
-          pauseOffset: oldTime.pauseOffset,
-          time: currentTime.realTime - oldTime.pauseOffset
-        };
+      if (playing) {
+        const deltaTime = actualTime - oldTime.actualTime;
+        return {appTime: oldTime.appTime + deltaTime, actualTime};
       }
 
-      return {
-        ...oldTime,
-        pauseOffset,
-        playing: false
-      };
-    }, {realTime: getCurrentTime(), pauseOffset: 0, playing: true})
-    .map(currentTime => currentTime.time)
-    .startWith(getCurrentTime());
-
-  const timeTravelPosition$ = mousePosition$
-    .withLatestFrom(time$, (mousePosition, time) => {
-      return calculateTimestamp(time, mousePosition.x);
-    });
+      return {appTime: oldTime.appTime, actualTime};
+    }, {appTime: 0, actualTime: getCurrentTime()})
+    .map(time => time.appTime)
+    .startWith(0);
 
   const wowSuchCurrentTime$ = time$
     .withLatestFrom(dragging$, timeTravelPosition$, (time, dragging, timeTravelPosition) => {
@@ -114,7 +104,7 @@ function logStreams (DOM, streams) {
       }
 
       return time;
-    }).startWith(getCurrentTime());
+    }).startWith(0);
 
   const loggedStreams = streams.map(streamInfo => {
     return streamInfo.stream

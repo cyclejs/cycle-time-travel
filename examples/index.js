@@ -1,6 +1,6 @@
 const {Rx, run} = require('@cycle/core');
 const {h, makeDOMDriver} = require('@cycle/dom');
-const logStreams = require('cycle-time-travel');
+const logStreams = require('../src/time-travel');
 
 require('babel/register');
 
