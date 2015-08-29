@@ -1,5 +1,5 @@
-const {Rx, run} = require('@cycle/core');
-const {h, makeDOMDriver} = require('@cycle/dom');
+const {Rx} = require('@cycle/core');
+const {h} = require('@cycle/dom');
 
 require('babel/register');
 
@@ -8,32 +8,6 @@ function log (label) {
     console.log(label, thing);
     return thing;
   };
-}
-
-const drivers = {
-  DOM: makeDOMDriver('.cycle')
-};
-
-function view (count$) {
-  return count$
-    .map((count) => (
-      h('.widget', [
-        h('span.count', `Count: ${count}`),
-        h('button.increment', 'Increment')
-      ])
-    )
-  );
-}
-
-function model (click$) {
-  return click$
-    .map(_ => 1)
-    .scan((count, value) => count + value)
-    .startWith(0);
-}
-
-function intent (DOM) {
-  return DOM.get('.increment', 'click');
 }
 
 function getCurrentTime () {
@@ -82,6 +56,7 @@ function getMousePosition (ev) {
 function calculateTimestamp (time, mouseX) {
   return time - (mouseX / document.documentElement.clientWidth) * 5000;
 }
+
 
 function logStreams (DOM, streams) {
   const timeTravel = {};
@@ -192,25 +167,3 @@ function logStreams (DOM, streams) {
     timeTravel
   };
 }
-
-function main ({DOM}) {
-  const userIntent = intent(DOM);
-  const count$ = model(userIntent);
-
-  const streamLogs = logStreams(DOM, [
-    {stream: count$, label: 'count$'}
-  ]);
-
-  const app = view(streamLogs.timeTravel.count$);
-
-  return {
-    DOM: Rx.Observable.combineLatest(app, streamLogs.DOM)
-      .map(vtrees => (
-        h('.app', vtrees)
-      )
-    )
-  };
-}
-
-run(main, drivers);
-
