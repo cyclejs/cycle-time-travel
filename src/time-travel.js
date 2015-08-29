@@ -14,7 +14,7 @@ function getCurrentTime () {
 function calculateValuePosition (startPercentage, currentTime, streamValue) {
   const occurrenceTimeAgoInMs = currentTime - streamValue.timestamp;
 
-  return (startPercentage - (occurrenceTimeAgoInMs / 5000) * startPercentage);
+  return (startPercentage - (occurrenceTimeAgoInMs / 10000) * startPercentage);
 }
 
 function renderStreamValue (currentTime, streamValue) {
@@ -47,15 +47,11 @@ function getMousePosition (ev) {
 }
 
 function calculateTimestamp (mouseX) {
-  return mouseX / document.documentElement.clientWidth * 5000;
+  return mouseX / document.documentElement.clientWidth * 10000;
 }
 
 function logStreams (DOM, streams) {
   const timeTravel = {};
-
-  const playing$ = DOM.get('.pause', 'click')
-    .scan((previous, _) => !previous, true)
-    .startWith(true);
 
   const mousePosition$ = DOM.get('.stream', 'mousemove')
     .map(getMousePosition)
@@ -69,17 +65,40 @@ function logStreams (DOM, streams) {
     release$.map(_ => false)
   ).startWith(false);
 
+  const playingClick$ = DOM.get('.pause', 'click')
+    .scan((previous, _) => !previous, true)
+    .startWith(true);
+
+  const playing$ = Rx.Observable.combineLatest(
+    dragging$,
+    playingClick$,
+    (dragging, playingClick) => {
+      if (dragging) {
+        return false;
+      }
+
+      return playingClick;
+    });
+
   const timeTravelPosition$ = Rx.Observable.combineLatest(
       mousePosition$,
       dragging$,
-      (mousePosition, dragging) => {
-        if (dragging) {
-          return calculateTimestamp(mousePosition.x);
-        }
+      (mousePosition, dragging) => ({
+        mousePosition,
+        dragging
+      })
+    ).scan((previousState, newState) => {
+      console.log(previousState, newState);
+      let timeTravelDelta = 0;
 
-        return 0;
+      if (newState.dragging) {
+        timeTravelDelta = calculateTimestamp(newState.mousePosition.x - previousState.mousePosition.x);
       }
-    );
+
+      return {...newState, timeTravelPosition: previousState.timeTravelPosition + timeTravelDelta};
+    }, {timeTravelPosition: 0, mousePosition: 0, dragging: false})
+    .map(state => state.timeTravelPosition)
+    .startWith(0);
 
   // TODO - use requestAnimationFrame scheduler
   const time$ = Rx.Observable.combineLatest(
