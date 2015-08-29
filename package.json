@@ -4,7 +4,6 @@
   "description": "A time travelling debugger for Cycle.js",
   "main": "lib/time-travel.js",
   "directories": {
-    "example": "examples",
     "lib": "lib"
   },
   "scripts": {
