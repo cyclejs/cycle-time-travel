@@ -93,18 +93,24 @@ function logStreams (DOM, streams) {
   const time$ = Rx.Observable.interval(16).map(getCurrentTime)
     .startWith(getCurrentTime());
 
-  const timeTravelPosition$ = click$.map(log('click'))
+  const timeTravelPosition$ = click$
     .withLatestFrom(mousePosition$, time$, (click, mousePosition, time) => {
       return calculateTimestamp(time, mousePosition.x);
-    });
+    }).startWith(0);
 
-  const wowSuchCurrentTime$ = time$.pausable(playing$).merge(timeTravelPosition$);
+  const wowSuchCurrentTime$ = time$
+    .withLatestFrom(playing$, timeTravelPosition$, (time, playing, timeTravelPosition) => {
+      if (playing) {
+        return time;
+      }
+
+      return timeTravelPosition;
+    }).startWith(getCurrentTime())
 
   const loggedStreams = streams.map(streamInfo => {
     return streamInfo.stream
       .timestamp()
       .startWith([])
-      .pausable(playing$)
       .scan((events, newEvent) => {
         const newEvents = events.concat([newEvent]);
 
@@ -116,12 +122,13 @@ function logStreams (DOM, streams) {
   });
 
   loggedStreams.forEach((loggedStream, index) => {
-    timeTravel[streams[index].label] = loggedStream
-      .withLatestFrom(wowSuchCurrentTime$, (values, time) => ({values, time}))
-      .map(({values, time}) => (values.filter((value, index) => value.timeStamp < time || index === values.length - 1)))
-      .filter(values => values[values.length - 1].value !== undefined)
-      .map(log('I hope this updates'))
-      .map(values => values[values.length - 1].value);
+    timeTravel[streams[index].label] = wowSuchCurrentTime$
+      .withLatestFrom(loggedStream, (time, events) => ({events, time}))
+      .map(({time, events}) => {
+        return events.find(val => val.timestamp > time) || events[events.length - 1];
+      })
+      .filter(thing => thing.value !== undefined)
+      .map(v => v.value);
   });
 
   return {
@@ -148,12 +155,13 @@ function main ({DOM}) {
 
   const streamLogs = logStreams(DOM, [
     {stream: count$, label: 'count$'},
-    {stream: count$.debounce(600), label: 'count$.debounce(600ms)'},
+    {stream: count$.throttle(600), label: 'count$.throttle(600ms)'},
     {stream: count$.sample(600), label: 'count$.sample(600ms)'},
+    {stream: count$.sample(1200), label: 'count$.sample(1200ms)'},
     {stream: userIntent, label: 'click$'}
   ]);
 
-  const app = view(model(streamLogs.timeTravel.click$));
+  const app = view(streamLogs.timeTravel.count$);
 
   return {
     DOM: Rx.Observable.combineLatest(app, streamLogs.DOM)
