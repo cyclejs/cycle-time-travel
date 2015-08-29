@@ -1,6 +1,8 @@
 const {Rx, run} = require('@cycle/core');
 const {h, makeDOMDriver} = require('@cycle/dom');
 
+require('babel/register');
+
 function log (label) {
   return (thing) => {
     console.log(label, thing);
