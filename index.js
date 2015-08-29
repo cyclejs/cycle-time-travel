@@ -3,13 +3,6 @@ const {h} = require('@cycle/dom');
 
 require('babel/register');
 
-function log (label) {
-  return (thing) => {
-    console.log(label, thing);
-    return thing;
-  };
-}
-
 function getCurrentTime () {
   if (window.appStartTime === undefined) {
     window.appStartTime = new Date().getTime();
@@ -57,25 +50,24 @@ function calculateTimestamp (time, mouseX) {
   return time - (mouseX / document.documentElement.clientWidth) * 5000;
 }
 
-
 function logStreams (DOM, streams) {
   const timeTravel = {};
 
   const playing$ = DOM.get('.pause', 'click')
     .scan((previous, _) => !previous, true)
-    .startWith(true)
+    .startWith(true):
 
   const mousePosition$ = DOM.get('.time-travel', 'mousemove')
     .map(getMousePosition)
     .startWith({x: 0, y: 0});
 
-  const click$ = DOM.get('.time-travel', 'mousedown').map(log('mousedown'));
-  const release$ = Rx.Observable.fromEvent(document.body, 'mouseup').map(log('release'));
+  const click$ = DOM.get('.time-travel', 'mousedown');
+  const release$ = Rx.Observable.fromEvent(document.body, 'mouseup');
 
   const dragging$ = Rx.Observable.merge(
     click$.map(_ => true),
     release$.map(_ => false)
-  ).startWith(false).map(log('dragging'));
+  ).startWith(false);
 
   const time$ = Rx.Observable.combineLatest(
       Rx.Observable.interval(16),
@@ -113,7 +105,7 @@ function logStreams (DOM, streams) {
   const timeTravelPosition$ = mousePosition$
     .withLatestFrom(time$, (mousePosition, time) => {
       return calculateTimestamp(time, mousePosition.x);
-    })
+    });
 
   const wowSuchCurrentTime$ = time$
     .withLatestFrom(dragging$, timeTravelPosition$, (time, dragging, timeTravelPosition) => {
