@@ -46,7 +46,7 @@ function getMousePosition (ev) {
   };
 }
 
-function calculateTimestamp (time, mouseX) {
+function calculateTimestamp (mouseX) {
   return mouseX / document.documentElement.clientWidth * 5000;
 }
 
@@ -69,15 +69,17 @@ function logStreams (DOM, streams) {
     release$.map(_ => false)
   ).startWith(false);
 
-  const timeTravelPosition$ = mousePosition$
-    .map(mousePosition => calculateTimestamp(mousePosition.x))
-    .withLatestFrom(dragging$, (timeTravel, dragging) => {
-      if (dragging) {
-        return timeTravel;
-      }
+  const timeTravelPosition$ = Rx.Observable.combineLatest(
+      mousePosition$,
+      dragging$,
+      (mousePosition, dragging) => {
+        if (dragging) {
+          return calculateTimestamp(mousePosition.x);
+        }
 
-      return 0;
-    });
+        return 0;
+      }
+    );
 
   // TODO - use requestAnimationFrame scheduler
   const time$ = Rx.Observable.combineLatest(
@@ -95,16 +97,8 @@ function logStreams (DOM, streams) {
       return {appTime: oldTime.appTime, actualTime};
     }, {appTime: 0, actualTime: getCurrentTime()})
     .map(time => time.appTime)
+    .withLatestFrom(timeTravelPosition$, (time, timeTravel) => time - timeTravel)
     .startWith(0);
-
-  const wowSuchCurrentTime$ = time$
-    .withLatestFrom(dragging$, timeTravelPosition$, (time, dragging, timeTravelPosition) => {
-      if (dragging) {
-        return timeTravelPosition;
-      }
-
-      return time;
-    }).startWith(0);
 
   const loggedStreams = streams.map(streamInfo => {
     return streamInfo.stream
@@ -123,7 +117,7 @@ function logStreams (DOM, streams) {
   });
 
   loggedStreams.forEach((loggedStream, index) => {
-    timeTravel[streams[index].label] = wowSuchCurrentTime$
+    timeTravel[streams[index].label] = time$
       .withLatestFrom(loggedStream, (time, events) => ({events, time}))
       .map(({time, events}) => {
         return events.slice(0).reverse().find(val => val.timestamp < time) || events[events.length - 1];
@@ -133,7 +127,7 @@ function logStreams (DOM, streams) {
   });
 
   return {
-    DOM: Rx.Observable.combineLatest(wowSuchCurrentTime$, playing$, ...loggedStreams,
+    DOM: Rx.Observable.combineLatest(time$, playing$, ...loggedStreams,
       (currentTime, playing, ...streamValues) => {
         return h('.time-travel', [
           h('button.pause', playing ? 'Pause' : 'Play'),
