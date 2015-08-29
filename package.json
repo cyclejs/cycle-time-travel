@@ -32,7 +32,9 @@
     "babel": "^5.8.23"
   },
   "scripts": {
-    "browserify": "browserify src/time-travel.js -t babelify --outfile lib/time-travel.js",
-    "prepublish": "npm run browserify"
+    "precompile-lib": "rm -rf lib/ && mkdir -p lib",
+    "compile-lib": "babel --optional es7.objectRestSpread src -d lib",
+    "browserify": "browserify src/time-travel.js -t babelify --outfile dist/time-travel.js",
+    "prepublish": "npm run compile-lib"
   }
 }
