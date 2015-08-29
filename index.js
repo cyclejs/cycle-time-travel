@@ -42,14 +42,14 @@ function getCurrentTime () {
   return new Date().getTime();
 }
 
-function calculateValuePosition (currentTime, streamValue) {
+function calculateValuePosition (startPercentage, currentTime, streamValue) {
   const occurrenceTimeAgoInMs = currentTime - streamValue.timestamp;
 
-  return (100 - (occurrenceTimeAgoInMs / 50));
+  return (startPercentage - (occurrenceTimeAgoInMs / 5000) * startPercentage);
 }
 
 function renderStreamValue (currentTime, streamValue) {
-  const left = calculateValuePosition(currentTime, streamValue);
+  const left = calculateValuePosition(70, currentTime, streamValue);
 
   if (left < -10) {
     return null;
@@ -64,6 +64,7 @@ function renderStream (currentTime, streamValues) {
   return (
     h('.stream', [
       h('.stream-title', streamValues.label),
+      h('.stream-marker', {style: {left: '72%'}}),
       ...streamValues.map(renderStreamValue.bind(null, currentTime))
     ])
   );
@@ -158,7 +159,7 @@ function logStreams (DOM, streams) {
         newEvents.label = streamInfo.label;
 
         return newEvents;
-      }, []
+      }
     );
   });
 
@@ -166,7 +167,7 @@ function logStreams (DOM, streams) {
     timeTravel[streams[index].label] = wowSuchCurrentTime$
       .withLatestFrom(loggedStream, (time, events) => ({events, time}))
       .map(({time, events}) => {
-        return events.find(val => val.timestamp > time) || events[events.length - 1];
+        return events.slice(0).reverse().find(val => val.timestamp < time) || events[events.length - 1];
       })
       .filter(thing => thing.value !== undefined)
       .map(v => v.value);
