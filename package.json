@@ -4,7 +4,8 @@
   "description": "A time travelling debugger for Cycle.js",
   "main": "lib/time-travel.js",
   "directories": {
-    "example": "examples"
+    "example": "examples",
+    "lib": "lib"
   },
   "scripts": {
     "test": "npm test"
@@ -28,7 +29,9 @@
   "dependencies": {
     "@cycle/core": "^3.1.0",
     "@cycle/dom": "^5.0.1",
-    "@cycle/http": "^3.1.0",
+    "@cycle/http": "^3.1.0"
+  },
+  "devDependencies": {
     "babel": "^5.8.23"
   },
   "scripts": {
