@@ -2,7 +2,7 @@
   "name": "cycle-time-travel",
   "version": "0.0.1",
   "description": "A time travelling debugger for Cycle.js",
-  "main": "index.js",
+  "main": "lib/time-travel.js",
   "directories": {
     "example": "examples"
   },
@@ -30,5 +30,9 @@
     "@cycle/dom": "^5.0.1",
     "@cycle/http": "^3.1.0",
     "babel": "^5.8.23"
+  },
+  "scripts": {
+    "browserify": "browserify src/time-travel.js -t babelify --outfile lib/time-travel.js",
+    "prepublish": "npm run browserify"
   }
 }

@@ -27,3 +27,6 @@ build/Release
 node_modules
 
 static/
+
+# Generated
+lib/
