@@ -1,7 +1,5 @@
 const {h} = require('@cycle/dom');
 
-const styles = require('./style');
-
 function calculateValuePosition (startPercentage, currentTime, streamValue) {
   const occurrenceTimeAgoInMs = currentTime - streamValue.timestamp;
 
@@ -15,32 +13,20 @@ function renderStreamValue (currentTime, streamValue) {
     return null;
   }
 
-  const inlineStyles = styles('.stream-value');
-
-  const style = {
-    ...inlineStyles,
-    left: left + '%'
-  }
-
   return (
     h('.stream-value',
-      {style},
+      {style: {left: left + '%'}},
       JSON.stringify(streamValue.value)
     )
   );
 }
 
 function renderStream (currentTime, streamValues, even) {
-  const style = {
-    ...styles('.stream'),
-    background: even ? '#D9D9D9' : '#C2C2C2'
-  }
-
   return (
-    h('.stream', {style}, [
-      h('.stream-title', {style: styles('.stream-title')}, streamValues.label),
+    h('.stream', [
+      h('.stream-title', streamValues.label),
       ...streamValues.map(renderStreamValue.bind(null, currentTime)),
-      h('.stream-marker', {style: styles('.stream-marker')})
+      h('.stream-marker')
     ])
   );
 }
