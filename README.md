@@ -85,8 +85,8 @@ function main({DOM}) {
       timeTravel.count$,                                        // NEW
       timeTravelBar$,                                           // NEW
       (count, timeTravelBar) =>                                 // NEW
-        h('.app', [                                             // NEW
-          h('div', [                                            // NEW
+        h('.app', [                                             
+          h('div', [                                            
             h('button.decrement', 'Decrement'),
             h('button.increment', 'Increment'),
             h('p', 'Counter: ' + count)
