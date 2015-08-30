@@ -1,5 +1,7 @@
 const {h} = require('@cycle/dom');
 
+const styles = require('./style');
+
 function calculateValuePosition (startPercentage, currentTime, streamValue) {
   const occurrenceTimeAgoInMs = currentTime - streamValue.timestamp;
 
@@ -13,24 +15,39 @@ function renderStreamValue (currentTime, streamValue) {
     return null;
   }
 
+  const inlineStyles = styles('.stream-value');
+
+  const style = {
+    ...inlineStyles,
+    left: left + '%'
+  }
+
   return (
-    h('.stream-value', {style: {left: left + '%'}}, JSON.stringify(streamValue.value))
+    h('.stream-value',
+      {style},
+      JSON.stringify(streamValue.value)
+    )
   );
 }
 
-function renderStream (currentTime, streamValues) {
+function renderStream (currentTime, streamValues, even) {
+  const style = {
+    ...styles('.stream'),
+    background: even ? '#D9D9D9' : '#C2C2C2'
+  }
+
   return (
-    h('.stream', [
-      h('.stream-title', streamValues.label),
+    h('.stream', {style}, [
+      h('.stream-title', {style: styles('.stream-title')}, streamValues.label),
       ...streamValues.map(renderStreamValue.bind(null, currentTime)),
-      h('.stream-marker', {style: {left: '72%'}})
+      h('.stream-marker', {style: styles('.stream-marker')})
     ])
   );
 }
 
 function renderStreams (currentTime, ...streamValues) {
-  return h('.streams', streamValues.map(streamValueSet =>
-    renderStream(currentTime, streamValueSet)
+  return h('.streams', streamValues.map((streamValueSet, index) =>
+    renderStream(currentTime, streamValueSet, index % 2 == 0)
   ));
 }
 

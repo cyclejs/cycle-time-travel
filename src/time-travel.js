@@ -4,6 +4,7 @@ const {Rx} = require('@cycle/core');
 const {h} = require('@cycle/dom');
 
 const renderStreams = require('./render-streams');
+const styles = require('./style');
 
 function getCurrentTime () {
   return new Date().getTime();
@@ -122,7 +123,7 @@ function logStreams (DOM, streams) {
   return {
     DOM: Rx.Observable.combineLatest(time$, playing$, ...loggedStreams,
       (currentTime, playing, ...streamValues) => {
-        return h('.time-travel', [
+        return h('.time-travel', {style: styles('.time-travel')}, [
           h('button.pause', playing ? 'Pause' : 'Play'),
           renderStreams(currentTime, ...streamValues)
         ]);
