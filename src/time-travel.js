@@ -134,9 +134,8 @@ function logStreams (DOM, streams) {
 
   loggedStreams.forEach((loggedStream, index) => {
     timeTravel[streams[index].label] = time$
-      .withLatestFrom(loggedStream, (time, events) => ({events, time}))
-      .map(({time, events}) => {
-        return events.slice(0).reverse().find(val => val.timestamp < time) || events[events.length - 1];
+      .withLatestFrom(loggedStream, (time, events) => {
+        return events.slice(0).reverse().find(val => val.timestamp <= time) || events[events.length - 1];
       })
       .filter(thing => thing.value !== undefined)
       .map(v => v.value);
