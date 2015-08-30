@@ -21,6 +21,8 @@ function stylesheet () {
       text-align: center;
       margin: 6px;
       white-space: nowrap;
+      border: 1px solid lightgray;
+      box-shadow: 0px 1px 1px gray;
     }
 
     .stream {
