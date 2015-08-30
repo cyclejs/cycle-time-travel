@@ -1,6 +1,6 @@
 {
   "name": "cycle-time-travel",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A time travelling debugger for Cycle.js",
   "main": "lib/time-travel.js",
   "directories": {
