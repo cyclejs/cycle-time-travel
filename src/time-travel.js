@@ -3,40 +3,10 @@ require('es6-shim');
 const {Rx} = require('@cycle/core');
 const {h} = require('@cycle/dom');
 
+const renderStreams = require('./render-streams');
+
 function getCurrentTime () {
-  if (window.appStartTime === undefined) {
-    window.appStartTime = new Date().getTime();
-  }
-
   return new Date().getTime();
-}
-
-function calculateValuePosition (startPercentage, currentTime, streamValue) {
-  const occurrenceTimeAgoInMs = currentTime - streamValue.timestamp;
-
-  return (startPercentage - (occurrenceTimeAgoInMs / 10000) * startPercentage);
-}
-
-function renderStreamValue (currentTime, streamValue) {
-  const left = calculateValuePosition(70, currentTime, streamValue);
-
-  if (left < -100) {
-    return null;
-  }
-
-  return (
-    h('.stream-value', {style: {left: left + '%'}}, JSON.stringify(streamValue.value))
-  );
-}
-
-function renderStream (currentTime, streamValues) {
-  return (
-    h('.stream', [
-      h('.stream-title', streamValues.label),
-      ...streamValues.map(renderStreamValue.bind(null, currentTime)),
-      h('.stream-marker', {style: {left: '72%'}})
-    ])
-  );
 }
 
 function getMousePosition (ev) {
@@ -154,7 +124,7 @@ function logStreams (DOM, streams) {
       (currentTime, playing, ...streamValues) => {
         return h('.time-travel', [
           h('button.pause', playing ? 'Pause' : 'Play'),
-          ...streamValues.map(renderStream.bind(null, currentTime))
+          renderStreams(currentTime, ...streamValues)
         ]);
       }
     ),
