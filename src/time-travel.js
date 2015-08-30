@@ -20,7 +20,7 @@ function calculateValuePosition (startPercentage, currentTime, streamValue) {
 function renderStreamValue (currentTime, streamValue) {
   const left = calculateValuePosition(70, currentTime, streamValue);
 
-  if (left < -10) {
+  if (left < -100) {
     return null;
   }
 
