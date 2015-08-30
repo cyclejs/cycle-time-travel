@@ -6,26 +6,46 @@ function calculateValuePosition (startPercentage, currentTime, streamValue) {
   return (startPercentage - (occurrenceTimeAgoInMs / 10000) * startPercentage);
 }
 
-function renderStreamValue (currentTime, streamValue) {
+function renderFeatureValue (value) {
+  if (!value) { return; }
+
+  return value.map(val => (
+    h('.subvalue', renderValue(val))
+  ));
+}
+
+function renderValue (value) {
+  return JSON.stringify(value, null, 0);
+}
+
+function renderStreamValue (currentTime, feature, streamValue) {
   const left = calculateValuePosition(70, currentTime, streamValue);
 
   if (left < -100) {
     return null;
   }
 
+  const valueRenderer = feature ? renderFeatureValue : renderValue;
+
   return (
-    h('.stream-value',
+    h('pre.stream-value',
       {style: {left: left + '%'}},
-      JSON.stringify(streamValue.value)
+      valueRenderer(streamValue.value)
     )
   );
 }
 
 function renderStream (currentTime, streamValues, even) {
+  let feature = '';
+
+  if (streamValues.options && streamValues.options.feature) {
+    feature = '.feature';
+  }
+
   return (
-    h('.stream', [
+    h(`.stream ${feature}`, [
       h('.stream-title', streamValues.label),
-      ...streamValues.map(renderStreamValue.bind(null, currentTime)),
+      ...streamValues.map(renderStreamValue.bind(null, currentTime, !!feature)),
       h('.stream-marker')
     ])
   );

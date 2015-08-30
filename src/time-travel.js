@@ -101,6 +101,7 @@ function logStreams (DOM, streams) {
         const newEvents = events.concat([newEvent]);
 
         newEvents.label = streamInfo.label;
+        newEvents.options = {feature: streamInfo.feature || false};
 
         return newEvents;
       }, []

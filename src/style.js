@@ -30,6 +30,18 @@ function stylesheet () {
       border-top: #CFCFCF 1px solid;
     }
 
+    .stream.feature {
+      height: 90px;
+    }
+
+    .stream.feature .stream-value {
+      height: 64px;
+      font-size: 0.5em;
+      padding: 8px;
+      white-space: pre;
+      text-align: left;
+    }
+
     .stream-title {
       margin: 5px;
       color: #757575;
