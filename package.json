@@ -7,7 +7,10 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "npm test"
+    "precompile-lib": "rm -rf lib/ && mkdir -p lib",
+    "compile-lib": "babel --optional es7.objectRestSpread src -d lib",
+    "browserify": "browserify src/time-travel.js -t babelify --outfile dist/time-travel.js",
+    "prepublish": "npm run compile-lib"
   },
   "repository": {
     "type": "git",
@@ -28,15 +31,10 @@
   "dependencies": {
     "@cycle/core": "^3.1.0",
     "@cycle/dom": "^5.0.1",
-    "@cycle/http": "^3.1.0"
+    "@cycle/http": "^3.1.0",
+    "es6-shim": "^0.33.2"
   },
   "devDependencies": {
     "babel": "^5.8.23"
-  },
-  "scripts": {
-    "precompile-lib": "rm -rf lib/ && mkdir -p lib",
-    "compile-lib": "babel --optional es7.objectRestSpread src -d lib",
-    "browserify": "browserify src/time-travel.js -t babelify --outfile dist/time-travel.js",
-    "prepublish": "npm run compile-lib"
   }
 }

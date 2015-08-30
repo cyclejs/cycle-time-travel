@@ -1,3 +1,5 @@
+require('es6-shim');
+
 const {Rx} = require('@cycle/core');
 const {h} = require('@cycle/dom');
 
@@ -79,21 +81,24 @@ function logStreams (DOM, streams) {
     });
 
   const timeTravelPosition$ = Rx.Observable.combineLatest(
-      mousePosition$,
-      dragging$,
-      (mousePosition, dragging) => ({
-        mousePosition,
-        dragging
-      })
-    ).scan((previousState, newState) => {
-      let timeTravelDelta = 0;
+    mousePosition$,
+    dragging$,
+    (mousePosition, dragging) => ({
+      mousePosition,
+      dragging
+    })
+  ).scan((previousState, newState) => {
+    let timeTravelDelta = 0;
 
-      if (newState.dragging) {
-        timeTravelDelta = calculateTimestamp(newState.mousePosition.x - previousState.mousePosition.x);
-      }
+    if (newState.dragging) {
+      timeTravelDelta = calculateTimestamp(newState.mousePosition.x - previousState.mousePosition.x);
+    }
 
-      return {...newState, timeTravelPosition: previousState.timeTravelPosition + timeTravelDelta};
-    }, {timeTravelPosition: 0, mousePosition: 0, dragging: false})
+    return {
+      ...newState,
+      timeTravelPosition: previousState.timeTravelPosition + timeTravelDelta
+    };
+  }, {timeTravelPosition: 0, mousePosition: 0, dragging: false})
     .map(state => state.timeTravelPosition)
     .startWith(0);
 
@@ -121,24 +126,27 @@ function logStreams (DOM, streams) {
       .withLatestFrom(time$, (ev, time) => ({
         timestamp: time, value: ev
       }))
-      .startWith([])
       .scan((events, newEvent) => {
         const newEvents = events.concat([newEvent]);
 
         newEvents.label = streamInfo.label;
 
         return newEvents;
-      }
-    );
+      }, []
+    ).share().startWith([]);
   });
 
   loggedStreams.forEach((loggedStream, index) => {
-    timeTravel[streams[index].label] = time$
-      .withLatestFrom(loggedStream, (time, events) => {
-        return events.slice(0).reverse().find(val => val.timestamp <= time) || events[events.length - 1];
-      })
-      .filter(thing => thing.value !== undefined)
-      .map(v => v.value);
+    timeTravel[streams[index].label] = Rx.Observable.combineLatest(
+        time$,
+        loggedStream,
+        (time, events) => (events.slice(0)
+          .reverse().find(val => val.timestamp <= time) ||
+          events[events.length - 1])
+      )
+      .filter(thing => thing !== undefined && thing.value !== undefined)
+      .map(v => v.value)
+      .distinctUntilChanged();
   });
 
   return {
