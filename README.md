@@ -65,7 +65,7 @@ And here it is with time travelling:
 ```js
 import Cycle from '@cycle/core';
 import {h, makeDOMDriver} from '@cycle/dom';
-import makeTimeTravel from 'cycle-time-travel';
+import makeTimeTravel from 'cycle-time-travel';                 // NEW
 
 function main({DOM}) {
   let action$ = Cycle.Rx.Observable.merge(
