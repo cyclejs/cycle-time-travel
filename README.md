@@ -2,7 +2,7 @@
 
 `cycle-time-travel` is a time travelling stream viewer for Cycle.js apps.
 
-**[Try the online example](http://widdersh.in/cycle-time-travel/)!**
+**[Try the online example](http://cycle.js.org/cycle-time-travel/)!**
 
 Why you should be excited:
 ---
