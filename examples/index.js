@@ -23,7 +23,7 @@ function model (click$) {
 }
 
 function intent (DOM) {
-  return DOM.select('.increment').events('click);
+  return DOM.select('.increment').events('click');
 }
 
 function main ({DOM}) {

@@ -21,14 +21,23 @@ function calculateTimestamp (mouseX) {
   return mouseX / document.documentElement.clientWidth * 10000;
 }
 
-function logStreams (DOM, streams) {
-  const timeTravel = {};
+function scopedDOM (DOM, scope) {
+  return {
+    select (selector) {
+      return DOM.select(`${scope} ${selector}`);
+    }
+  };
+}
 
-  const mousePosition$ = DOM.select('.stream').events('mousemove')
+function logStreams (DOM, streams, name = '.time-travel') {
+  const timeTravel = {};
+  const timeTravelDOM = scopedDOM(DOM, name);
+
+  const mousePosition$ = timeTravelDOM.select('.stream').events('mousemove')
     .map(getMousePosition)
     .startWith({x: 0, y: 0});
 
-  const click$ = DOM.select('.stream').events('mousedown');
+  const click$ = timeTravelDOM.select('.stream').events('mousedown');
   const release$ = Rx.Observable.fromEvent(document.body, 'mouseup');
 
   const dragging$ = Rx.Observable.merge(
@@ -36,7 +45,7 @@ function logStreams (DOM, streams) {
     release$.map(_ => false)
   ).startWith(false);
 
-  const playingClick$ = DOM.select('.pause').events('click')
+  const playingClick$ = timeTravelDOM.select('.pause').events('click')
     .scan((previous, _) => !previous, true)
     .startWith(true);
 
@@ -124,7 +133,7 @@ function logStreams (DOM, streams) {
   return {
     DOM: Rx.Observable.combineLatest(time$, playing$, ...loggedStreams,
       (currentTime, playing, ...streamValues) => {
-        return h('.time-travel', [
+        return h(name, [
           stylesheet(),
           h('button.pause', playing ? 'Pause' : 'Play'),
           renderStreams(currentTime, ...streamValues)
