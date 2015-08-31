@@ -24,11 +24,11 @@ function calculateTimestamp (mouseX) {
 function logStreams (DOM, streams) {
   const timeTravel = {};
 
-  const mousePosition$ = DOM.get('.stream', 'mousemove')
+  const mousePosition$ = DOM.select('.stream').events('mousemove')
     .map(getMousePosition)
     .startWith({x: 0, y: 0});
 
-  const click$ = DOM.get('.stream', 'mousedown');
+  const click$ = DOM.select('.stream').events('mousedown');
   const release$ = Rx.Observable.fromEvent(document.body, 'mouseup');
 
   const dragging$ = Rx.Observable.merge(
@@ -36,7 +36,7 @@ function logStreams (DOM, streams) {
     release$.map(_ => false)
   ).startWith(false);
 
-  const playingClick$ = DOM.get('.pause', 'click')
+  const playingClick$ = DOM.select('.pause').events('click')
     .scan((previous, _) => !previous, true)
     .startWith(true);
 
