@@ -17,29 +17,45 @@ require('babel/register');
 
 function view(count$) {
   return count$.map(function (count) {
-    return h('.widget', [h('span.count', 'Count: ' + count), h('button.increment', 'Increment')]);
+    return h('.widget', [h('span.count', 'Count: ' + count), h('button.increment', 'Increment'), h('button.decrement', 'Decrement')]);
   });
 }
 
-function model(click$) {
-  return click$.map(function (_) {
-    return 1;
-  }).scan(function (count, value) {
+function model(_ref) {
+  var increment$ = _ref.increment$;
+  var decrement$ = _ref.decrement$;
+
+  var action$ = Rx.Observable.merge(increment$.map(function (_) {
+    return +1;
+  }), decrement$.map(function (_) {
+    return -1;
+  }));
+
+  var count$ = action$.scan(function (count, value) {
     return count + value;
   }).startWith(0);
+
+  return { count$: count$, action$: action$ };
 }
 
 function intent(DOM) {
-  return DOM.select('.increment').events('click');
+  return {
+    increment$: DOM.select('.increment').events('click'),
+    decrement$: DOM.select('.decrement').events('click')
+  };
 }
 
-function main(_ref) {
-  var DOM = _ref.DOM;
+function main(_ref2) {
+  var DOM = _ref2.DOM;
 
   var userIntent = intent(DOM);
-  var count$ = model(userIntent);
 
-  var logStream = logStreams(DOM, [{ stream: count$, label: 'count$' }]);
+  var _model = model(userIntent);
+
+  var count$ = _model.count$;
+  var action$ = _model.action$;
+
+  var logStream = logStreams(DOM, [{ stream: count$, label: 'count$' }, { stream: action$, label: 'action$' }]);
 
   var app = view(logStream.timeTravel.count$);
 
