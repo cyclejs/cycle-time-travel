@@ -6,6 +6,8 @@ const {h} = require('@cycle/dom');
 const renderStreams = require('./render-streams');
 const stylesheet = require('./style');
 
+const makeTimeTravelPosition$ = require('./calculate-time-travel-position');
+
 function getCurrentTime () {
   return new Date().getTime();
 }
@@ -15,10 +17,6 @@ function getMousePosition (ev) {
     x: ev.clientX,
     y: ev.clientY
   };
-}
-
-function calculateTimestamp (mouseX) {
-  return mouseX / document.documentElement.clientWidth * 10000;
 }
 
 function scopedDOM (DOM, scope) {
@@ -60,27 +58,7 @@ function logStreams (DOM, streams, name = '.time-travel') {
       return playingClick;
     });
 
-  const timeTravelPosition$ = Rx.Observable.combineLatest(
-    mousePosition$,
-    dragging$,
-    (mousePosition, dragging) => ({
-      mousePosition,
-      dragging
-    })
-  ).scan((previousState, newState) => {
-    let timeTravelDelta = 0;
-
-    if (newState.dragging) {
-      timeTravelDelta = calculateTimestamp(newState.mousePosition.x - previousState.mousePosition.x);
-    }
-
-    return {
-      ...newState,
-      timeTravelPosition: previousState.timeTravelPosition + timeTravelDelta
-    };
-  }, {timeTravelPosition: 0, mousePosition: 0, dragging: false})
-    .map(state => state.timeTravelPosition)
-    .startWith(0);
+  const timeTravelPosition$ = makeTimeTravelPosition$(mousePosition$, dragging$);
 
   // TODO - use requestAnimationFrame scheduler
   const time$ = Rx.Observable.combineLatest(
