@@ -9,29 +9,39 @@ function view (count$) {
     .map((count) => (
       h('.widget', [
         h('span.count', `Count: ${count}`),
-        h('button.increment', 'Increment')
+        h('button.increment', 'Increment'),
+        h('button.decrement', 'Decrement')
       ])
     )
   );
 }
 
-function model (click$) {
-  return click$
-    .map(_ => 1)
-    .scan((count, value) => count + value)
+function model ({increment$, decrement$}) {
+  const action$ = Rx.Observable.merge(
+    increment$.map(_ => +1),
+    decrement$.map(_ => -1)
+  );
+
+  const count$ = action$.scan((count, value) => count + value)
     .startWith(0);
+
+  return {count$, action$};
 }
 
 function intent (DOM) {
-  return DOM.select('.increment').events('click');
+  return {
+    increment$: DOM.select('.increment').events('click'),
+    decrement$: DOM.select('.decrement').events('click')
+  };
 }
 
 function main ({DOM}) {
   const userIntent = intent(DOM);
-  const count$ = model(userIntent);
+  const {count$, action$} = model(userIntent);
 
   const logStream = logStreams(DOM, [
-    {stream: count$, label: 'count$'}
+    {stream: count$, label: 'count$'},
+    {stream: action$, label: 'action$'}
   ]);
 
   const app = view(logStream.timeTravel.count$);
