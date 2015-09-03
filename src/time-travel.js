@@ -1,14 +1,10 @@
 require('es6-shim');
 
-const {Rx} = require('@cycle/core');
-const {h} = require('@cycle/dom');
-
-const renderStreams = require('./render-streams');
-const stylesheet = require('./style');
 const intent = require('./intent');
 const makeTime$ = require('./time');
 const record = require('./record-streams');
 const timeTravelStreams = require('./time-travel-streams');
+const timeTravelBarView = require('./view');
 
 function scopedDOM (DOM, scope) {
   return {
@@ -28,16 +24,7 @@ function logStreams (DOM, streams, name = '.time-travel') {
   const timeTravel = timeTravelStreams(recordedStreams, time$);
 
   return {
-    DOM: Rx.Observable.combineLatest(time$, playing$, ...recordedStreams,
-      (currentTime, playing, ...streamValues) => {
-        return h(name, [
-          stylesheet(),
-          h('button.pause', playing ? 'Pause' : 'Play'),
-          renderStreams(currentTime, ...streamValues)
-        ]);
-      }
-    ),
-
+    DOM: timeTravelBarView(time$, playing$, recordedStreams),
     timeTravel
   };
 }
