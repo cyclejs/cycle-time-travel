@@ -8,6 +8,7 @@ const stylesheet = require('./style');
 const intent = require('./intent');
 const makeTime$ = require('./time');
 const record = require('./record-streams');
+const timeTravelStreams = require('./time-travel-streams');
 
 function scopedDOM (DOM, scope) {
   return {
@@ -18,27 +19,13 @@ function scopedDOM (DOM, scope) {
 }
 
 function logStreams (DOM, streams, name = '.time-travel') {
-  const timeTravel = {};
-
-  const timeTravelDOM = scopedDOM(DOM, name);
-  const {timeTravelPosition$, playing$} = intent(timeTravelDOM);
+  const {timeTravelPosition$, playing$} = intent(scopedDOM(DOM, name));
 
   const time$ = makeTime$(playing$, timeTravelPosition$);
 
   const recordedStreams = record(streams, time$);
 
-  recordedStreams.forEach((recordedStream, index) => {
-    timeTravel[streams[index].label] = Rx.Observable.combineLatest(
-        time$,
-        recordedStream,
-        (time, events) => (events.slice(0)
-          .reverse().find(val => val.timestamp <= time) ||
-          events[events.length - 1])
-      )
-      .filter(thing => thing !== undefined && thing.value !== undefined)
-      .map(v => v.value)
-      .distinctUntilChanged();
-  });
+  const timeTravel = timeTravelStreams(recordedStreams, time$);
 
   return {
     DOM: Rx.Observable.combineLatest(time$, playing$, ...recordedStreams,
