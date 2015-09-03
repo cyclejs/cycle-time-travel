@@ -7,6 +7,7 @@ const renderStreams = require('./render-streams');
 const stylesheet = require('./style');
 const intent = require('./intent');
 const makeTime$ = require('./time');
+const record = require('./record-streams');
 
 function scopedDOM (DOM, scope) {
   return {
@@ -24,26 +25,12 @@ function logStreams (DOM, streams, name = '.time-travel') {
 
   const time$ = makeTime$(playing$, timeTravelPosition$);
 
-  const loggedStreams = streams.map(streamInfo => {
-    return streamInfo.stream
-      .withLatestFrom(time$, (ev, time) => ({
-        timestamp: time, value: ev
-      }))
-      .scan((events, newEvent) => {
-        const newEvents = events.concat([newEvent]);
+  const recordedStreams = record(streams, time$);
 
-        newEvents.label = streamInfo.label;
-        newEvents.options = {feature: streamInfo.feature || false};
-
-        return newEvents;
-      }, []
-    ).share().startWith([]);
-  });
-
-  loggedStreams.forEach((loggedStream, index) => {
+  recordedStreams.forEach((recordedStream, index) => {
     timeTravel[streams[index].label] = Rx.Observable.combineLatest(
         time$,
-        loggedStream,
+        recordedStream,
         (time, events) => (events.slice(0)
           .reverse().find(val => val.timestamp <= time) ||
           events[events.length - 1])
@@ -54,7 +41,7 @@ function logStreams (DOM, streams, name = '.time-travel') {
   });
 
   return {
-    DOM: Rx.Observable.combineLatest(time$, playing$, ...loggedStreams,
+    DOM: Rx.Observable.combineLatest(time$, playing$, ...recordedStreams,
       (currentTime, playing, ...streamValues) => {
         return h(name, [
           stylesheet(),
