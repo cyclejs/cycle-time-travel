@@ -17,7 +17,7 @@ function TimeTravel (DOM, streams, name = '.time-travel') {
   const timeTravel = timeTravelStreams(recordedStreams, time$);
 
   return {
-    DOM: timeTravelBarView(time$, playing$, recordedStreams),
+    DOM: timeTravelBarView(name, time$, playing$, recordedStreams),
     timeTravel
   };
 }
