@@ -5,14 +5,7 @@ const makeTime$ = require('./time');
 const record = require('./record-streams');
 const timeTravelStreams = require('./time-travel-streams');
 const timeTravelBarView = require('./view');
-
-function scopedDOM (DOM, scope) {
-  return {
-    select (selector) {
-      return DOM.select(`${scope} ${selector}`);
-    }
-  };
-}
+const scopedDOM = require('./scoped-dom');
 
 function logStreams (DOM, streams, name = '.time-travel') {
   const {timeTravelPosition$, playing$} = intent(scopedDOM(DOM, name));
