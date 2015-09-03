@@ -5,12 +5,8 @@ const {h} = require('@cycle/dom');
 
 const renderStreams = require('./render-streams');
 const stylesheet = require('./style');
-
 const intent = require('./intent');
-
-function getCurrentTime () {
-  return new Date().getTime();
-}
+const makeTime$ = require('./time');
 
 function scopedDOM (DOM, scope) {
   return {
@@ -26,24 +22,7 @@ function logStreams (DOM, streams, name = '.time-travel') {
   const timeTravelDOM = scopedDOM(DOM, name);
   const {timeTravelPosition$, playing$} = intent(timeTravelDOM);
 
-  // TODO - use requestAnimationFrame scheduler
-  const time$ = Rx.Observable.combineLatest(
-      Rx.Observable.interval(16),
-      playing$,
-      (_, playing) => (playing)
-    ).scan((oldTime, playing) => {
-      const actualTime = getCurrentTime();
-
-      if (playing) {
-        const deltaTime = actualTime - oldTime.actualTime;
-        return {appTime: oldTime.appTime + deltaTime, actualTime};
-      }
-
-      return {appTime: oldTime.appTime, actualTime};
-    }, {appTime: 0, actualTime: getCurrentTime()})
-    .map(time => time.appTime)
-    .withLatestFrom(timeTravelPosition$, (time, timeTravel) => time - timeTravel)
-    .startWith(0);
+  const time$ = makeTime$(playing$, timeTravelPosition$);
 
   const loggedStreams = streams.map(streamInfo => {
     return streamInfo.stream
