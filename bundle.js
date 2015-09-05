@@ -72,7 +72,7 @@ var drivers = {
 
 run(main, drivers);
 
-},{"../src/time-travel":305,"@cycle/core":2,"@cycle/dom":6,"babel/register":301}],2:[function(require,module,exports){
+},{"../src/time-travel":310,"@cycle/core":2,"@cycle/dom":6,"babel/register":301}],2:[function(require,module,exports){
 "use strict";
 
 var Rx = require("rx");
@@ -10617,7 +10617,7 @@ Rx.Observable.prototype.flatMapWithMaxConcurrent = function(limit, selector, res
 }.call(this));
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":307}],4:[function(require,module,exports){
+},{"_process":314}],4:[function(require,module,exports){
 "use strict";
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -14347,7 +14347,7 @@ if (typeof document !== 'undefined') {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"min-document":306}],88:[function(require,module,exports){
+},{"min-document":313}],88:[function(require,module,exports){
 "use strict";
 
 module.exports = function isObject(x) {
@@ -20383,7 +20383,7 @@ module.exports = require('./modules/$.core');
 );
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":307}],300:[function(require,module,exports){
+},{"_process":314}],300:[function(require,module,exports){
 module.exports = require("./lib/api/register/node-polyfill");
 
 },{"./lib/api/register/node-polyfill":117}],301:[function(require,module,exports){
@@ -23633,7 +23633,130 @@ module.exports = require("babel-core/register");
 }));
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":307}],303:[function(require,module,exports){
+},{"_process":314}],303:[function(require,module,exports){
+'use strict';
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _require = require('@cycle/core');
+
+var Rx = _require.Rx;
+
+function calculateTimestamp(mouseX) {
+  return mouseX / document.documentElement.clientWidth * 10000;
+}
+
+function calculateTimeTravelPosition(previousState, newState) {
+  var timeTravelDelta = 0;
+
+  if (newState.dragging) {
+    timeTravelDelta = calculateTimestamp(newState.mousePosition.x - previousState.mousePosition.x);
+  }
+
+  return _extends({}, newState, {
+    timeTravelPosition: previousState.timeTravelPosition + timeTravelDelta
+  });
+}
+
+function makeTimeTravelPosition$(mousePosition$, dragging$) {
+  var initialState = {
+    timeTravelPosition: 0,
+    mousePosition: 0,
+    dragging: false
+  };
+
+  var currentPositionAndDragState$ = Rx.Observable.combineLatest(mousePosition$, dragging$, function (mousePosition, dragging) {
+    return { mousePosition: mousePosition, dragging: dragging };
+  });
+
+  return currentPositionAndDragState$.scan(calculateTimeTravelPosition, initialState).map(function (state) {
+    return state.timeTravelPosition;
+  }).startWith(0);
+}
+
+module.exports = makeTimeTravelPosition$;
+
+},{"@cycle/core":2}],304:[function(require,module,exports){
+'use strict';
+
+var _require = require('@cycle/core');
+
+var Rx = _require.Rx;
+
+var makeTimeTravelPosition$ = require('./calculate-time-travel-position');
+
+function getMousePosition(ev) {
+  return {
+    x: ev.clientX,
+    y: ev.clientY
+  };
+}
+
+function intent(DOM) {
+  var mousePosition$ = DOM.select('.stream').events('mousemove').map(getMousePosition).startWith({ x: 0, y: 0 });
+
+  var click$ = DOM.select('.stream').events('mousedown');
+  var release$ = Rx.Observable.fromEvent(document.body, 'mouseup');
+
+  var dragging$ = Rx.Observable.merge(click$.map(function (_) {
+    return true;
+  }), release$.map(function (_) {
+    return false;
+  })).startWith(false);
+
+  var playingClick$ = DOM.select('.pause').events('click').scan(function (previous, _) {
+    return !previous;
+  }, true).startWith(true);
+
+  var playing$ = Rx.Observable.combineLatest(dragging$, playingClick$, function (dragging, playingClick) {
+    if (dragging) {
+      return false;
+    }
+
+    return playingClick;
+  });
+
+  var timeTravelPosition$ = makeTimeTravelPosition$(mousePosition$, dragging$);
+
+  return {
+    timeTravelPosition$: timeTravelPosition$,
+    playing$: playing$
+  };
+}
+
+module.exports = intent;
+
+},{"./calculate-time-travel-position":303,"@cycle/core":2}],305:[function(require,module,exports){
+"use strict";
+
+function recordStream(streamInfo, time$) {
+  var recordedStream = streamInfo.stream.withLatestFrom(time$, function (ev, time) {
+    return {
+      timestamp: time, value: ev
+    };
+  }).scan(function (events, newEvent) {
+    var newEvents = events.concat([newEvent]);
+
+    newEvents.label = streamInfo.label;
+    newEvents.options = { feature: streamInfo.feature || false };
+
+    return newEvents;
+  }, []).share().startWith([]);
+
+  recordedStream.label = streamInfo.label;
+
+  return recordedStream;
+}
+
+function recordStreams(streams, time$) {
+  return streams.map(function (streamInfo) {
+    return recordStream(streamInfo, time$);
+  });
+}
+
+module.exports = recordStreams;
+
+},{}],306:[function(require,module,exports){
 'use strict';
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
@@ -23696,7 +23819,20 @@ function renderStreams(currentTime) {
 
 module.exports = renderStreams;
 
-},{"@cycle/dom":6}],304:[function(require,module,exports){
+},{"@cycle/dom":6}],307:[function(require,module,exports){
+"use strict";
+
+function scopedDOM(DOM, scope) {
+  return {
+    select: function select(selector) {
+      return DOM.select(scope + " " + selector);
+    }
+  };
+}
+
+module.exports = scopedDOM;
+
+},{}],308:[function(require,module,exports){
 'use strict';
 
 var _require = require('@cycle/dom');
@@ -23709,101 +23845,81 @@ function stylesheet() {
 
 module.exports = stylesheet;
 
-},{"@cycle/dom":6}],305:[function(require,module,exports){
+},{"@cycle/dom":6}],309:[function(require,module,exports){
 'use strict';
-
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
-
-require('es6-shim');
 
 var _require = require('@cycle/core');
 
 var Rx = _require.Rx;
 
-var _require2 = require('@cycle/dom');
+function timeTravelStreams(streams, time$) {
+  var timeTravel = {};
 
-var h = _require2.h;
+  streams.forEach(function (recordedStream, index) {
+    timeTravel[streams[index].label] = Rx.Observable.combineLatest(time$, recordedStream, function (time, events) {
+      return events.slice(0).reverse().find(function (val) {
+        return val.timestamp <= time;
+      }) || events[0];
+    }).filter(function (thing) {
+      return thing !== undefined && thing.value !== undefined;
+    }).map(function (v) {
+      return v.value;
+    }).distinctUntilChanged();
+  });
 
-var renderStreams = require('./render-streams');
-var stylesheet = require('./style');
+  return timeTravel;
+}
+
+module.exports = timeTravelStreams;
+
+},{"@cycle/core":2}],310:[function(require,module,exports){
+'use strict';
+
+require('es6-shim');
+
+var intent = require('./intent');
+var makeTime$ = require('./time');
+var record = require('./record-streams');
+var timeTravelStreams = require('./time-travel-streams');
+var timeTravelBarView = require('./view');
+var scopedDOM = require('./scoped-dom');
+
+function TimeTravel(DOM, streams) {
+  var name = arguments.length <= 2 || arguments[2] === undefined ? '.time-travel' : arguments[2];
+
+  var _intent = intent(scopedDOM(DOM, name));
+
+  var timeTravelPosition$ = _intent.timeTravelPosition$;
+  var playing$ = _intent.playing$;
+
+  var time$ = makeTime$(playing$, timeTravelPosition$);
+
+  var recordedStreams = record(streams, time$);
+
+  var timeTravel = timeTravelStreams(recordedStreams, time$);
+
+  return {
+    DOM: timeTravelBarView(name, time$, playing$, recordedStreams),
+    timeTravel: timeTravel
+  };
+}
+
+module.exports = TimeTravel;
+
+},{"./intent":304,"./record-streams":305,"./scoped-dom":307,"./time":311,"./time-travel-streams":309,"./view":312,"es6-shim":302}],311:[function(require,module,exports){
+'use strict';
+
+var _require = require('@cycle/core');
+
+var Rx = _require.Rx;
 
 function getCurrentTime() {
   return new Date().getTime();
 }
 
-function getMousePosition(ev) {
-  return {
-    x: ev.clientX,
-    y: ev.clientY
-  };
-}
-
-function calculateTimestamp(mouseX) {
-  return mouseX / document.documentElement.clientWidth * 10000;
-}
-
-function scopedDOM(DOM, scope) {
-  return {
-    select: function select(selector) {
-      return DOM.select(scope + ' ' + selector);
-    }
-  };
-}
-
-function logStreams(DOM, streams) {
-  var _Rx$Observable;
-
-  var name = arguments.length <= 2 || arguments[2] === undefined ? '.time-travel' : arguments[2];
-
-  var timeTravel = {};
-  var timeTravelDOM = scopedDOM(DOM, name);
-
-  var mousePosition$ = timeTravelDOM.select('.stream').events('mousemove').map(getMousePosition).startWith({ x: 0, y: 0 });
-
-  var click$ = timeTravelDOM.select('.stream').events('mousedown');
-  var release$ = Rx.Observable.fromEvent(document.body, 'mouseup');
-
-  var dragging$ = Rx.Observable.merge(click$.map(function (_) {
-    return true;
-  }), release$.map(function (_) {
-    return false;
-  })).startWith(false);
-
-  var playingClick$ = timeTravelDOM.select('.pause').events('click').scan(function (previous, _) {
-    return !previous;
-  }, true).startWith(true);
-
-  var playing$ = Rx.Observable.combineLatest(dragging$, playingClick$, function (dragging, playingClick) {
-    if (dragging) {
-      return false;
-    }
-
-    return playingClick;
-  });
-
-  var timeTravelPosition$ = Rx.Observable.combineLatest(mousePosition$, dragging$, function (mousePosition, dragging) {
-    return {
-      mousePosition: mousePosition,
-      dragging: dragging
-    };
-  }).scan(function (previousState, newState) {
-    var timeTravelDelta = 0;
-
-    if (newState.dragging) {
-      timeTravelDelta = calculateTimestamp(newState.mousePosition.x - previousState.mousePosition.x);
-    }
-
-    return _extends({}, newState, {
-      timeTravelPosition: previousState.timeTravelPosition + timeTravelDelta
-    });
-  }, { timeTravelPosition: 0, mousePosition: 0, dragging: false }).map(function (state) {
-    return state.timeTravelPosition;
-  }).startWith(0);
-
+function makeTime$(playing$, timeTravelPosition$) {
   // TODO - use requestAnimationFrame scheduler
-  var time$ = Rx.Observable.combineLatest(Rx.Observable.interval(16), playing$, function (_, playing) {
+  return Rx.Observable.combineLatest(Rx.Observable.interval(16), playing$, function (_, playing) {
     return playing;
   }).scan(function (oldTime, playing) {
     var actualTime = getCurrentTime();
@@ -23819,52 +23935,43 @@ function logStreams(DOM, streams) {
   }).withLatestFrom(timeTravelPosition$, function (time, timeTravel) {
     return time - timeTravel;
   }).startWith(0);
-
-  var loggedStreams = streams.map(function (streamInfo) {
-    return streamInfo.stream.withLatestFrom(time$, function (ev, time) {
-      return {
-        timestamp: time, value: ev
-      };
-    }).scan(function (events, newEvent) {
-      var newEvents = events.concat([newEvent]);
-
-      newEvents.label = streamInfo.label;
-      newEvents.options = { feature: streamInfo.feature || false };
-
-      return newEvents;
-    }, []).share().startWith([]);
-  });
-
-  loggedStreams.forEach(function (loggedStream, index) {
-    timeTravel[streams[index].label] = Rx.Observable.combineLatest(time$, loggedStream, function (time, events) {
-      return events.slice(0).reverse().find(function (val) {
-        return val.timestamp <= time;
-      }) || events[events.length - 1];
-    }).filter(function (thing) {
-      return thing !== undefined && thing.value !== undefined;
-    }).map(function (v) {
-      return v.value;
-    }).distinctUntilChanged();
-  });
-
-  return {
-    DOM: (_Rx$Observable = Rx.Observable).combineLatest.apply(_Rx$Observable, [time$, playing$].concat(_toConsumableArray(loggedStreams), [function (currentTime, playing) {
-      for (var _len = arguments.length, streamValues = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-        streamValues[_key - 2] = arguments[_key];
-      }
-
-      return h(name, [stylesheet(), h('button.pause', playing ? 'Pause' : 'Play'), renderStreams.apply(undefined, [currentTime].concat(streamValues))]);
-    }])),
-
-    timeTravel: timeTravel
-  };
 }
 
-module.exports = logStreams;
+module.exports = makeTime$;
 
-},{"./render-streams":303,"./style":304,"@cycle/core":2,"@cycle/dom":6,"es6-shim":302}],306:[function(require,module,exports){
+},{"@cycle/core":2}],312:[function(require,module,exports){
+'use strict';
 
-},{}],307:[function(require,module,exports){
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
+
+var _require = require('@cycle/core');
+
+var Rx = _require.Rx;
+
+var _require2 = require('@cycle/dom');
+
+var h = _require2.h;
+
+var renderStreams = require('./render-streams');
+var stylesheet = require('./style');
+
+function timeTravelBarView(name, time$, playing$, recordedStreams) {
+  var _Rx$Observable;
+
+  return (_Rx$Observable = Rx.Observable).combineLatest.apply(_Rx$Observable, [time$, playing$].concat(_toConsumableArray(recordedStreams), [function (currentTime, playing) {
+    for (var _len = arguments.length, streamValues = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+      streamValues[_key - 2] = arguments[_key];
+    }
+
+    return h(name, [stylesheet(), h('button.pause', playing ? 'Pause' : 'Play'), renderStreams.apply(undefined, [currentTime].concat(streamValues))]);
+  }]));
+}
+
+module.exports = timeTravelBarView;
+
+},{"./render-streams":306,"./style":308,"@cycle/core":2,"@cycle/dom":6}],313:[function(require,module,exports){
+
+},{}],314:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
