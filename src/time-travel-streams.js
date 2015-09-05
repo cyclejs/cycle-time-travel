@@ -9,7 +9,7 @@ function timeTravelStreams (streams, time$) {
         recordedStream,
         (time, events) => (events.slice(0)
           .reverse().find(val => val.timestamp <= time) ||
-          events[events.length - 1])
+          events[0])
       )
       .filter(thing => thing !== undefined && thing.value !== undefined)
       .map(v => v.value)
