@@ -2,6 +2,8 @@
 
 `cycle-time-travel` is a time travelling stream viewer for Cycle.js apps.
 
+**[Try the online example](http://cycle.js.org/cycle-time-travel/)!**
+
 Why you should be excited:
 ---
  * It makes it easy to see data flowing through your Cycle.app
