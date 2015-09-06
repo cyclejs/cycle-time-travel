@@ -55,6 +55,7 @@ describe('TimeTravel', () => {
     const renderTarget = createRenderTarget();
     run(main, {DOM: makeDOMDriver(renderTarget)});
 
+    // TODO - do this by subscribing to responses instead
     setTimeout(() => {
       $(renderTarget).find('.pause').trigger('click');
 
