@@ -3,7 +3,7 @@ const assert = require('assert');
 const $ = require('jquery');
 
 const {run, Rx} = require('@cycle/core');
-const {makeDOMDriver} = require('@cycle/dom');
+const {h, makeDOMDriver} = require('@cycle/dom');
 
 const TimeTravel = require('../src/time-travel');
 
@@ -52,22 +52,56 @@ describe('TimeTravel', () => {
       return {DOM: timeTravel.DOM};
     }
 
-    assert.doesNotThrow(() => {
-      const renderTarget = createRenderTarget();
-      run(main, {DOM: makeDOMDriver(renderTarget)});
+    const renderTarget = createRenderTarget();
+    run(main, {DOM: makeDOMDriver(renderTarget)});
 
-      // this is probably not a good way to do this
-      setTimeout(() => {
-        $(renderTarget).find('.pause').trigger('click');
+    setTimeout(() => {
+      $(renderTarget).find('.pause').trigger('click');
 
-        assert.equal($(renderTarget).find('.pause').text(), 'Play');
+      assert.equal($(renderTarget).find('.pause').text(), 'Play');
 
-        $(renderTarget).find('.pause').trigger('click');
+      $(renderTarget).find('.pause').trigger('click');
 
-        assert.equal($(renderTarget).find('.pause').text(), 'Pause');
+      assert.equal($(renderTarget).find('.pause').text(), 'Pause');
 
-        done();
-      }, 1);
-    });
+      done();
+    }, 1);
+  });
+
+  it('plays the app as normal', (done) => {
+    function main ({DOM}) {
+      const count$ = DOM.select('.increment').events('click')
+        .scan((count, _) => count + 1, 0)
+        .startWith(0);
+
+      const timeTravel = TimeTravel(DOM, [
+        {stream: count$, label: 'count$'}
+      ]);
+
+      const vtree$ = count$.map(count => (
+        h('.app', [
+          h('button.increment', 'Increment'),
+          h('.count', `Count: ${count}`)
+        ])
+      ));
+
+      return {
+        DOM: Rx.Observable.combineLatest(vtree$, timeTravel.DOM)
+          .map(vtrees => h('.test', vtrees))
+      };
+    }
+
+    const renderTarget = createRenderTarget();
+    run(main, {DOM: makeDOMDriver(renderTarget)});
+
+    setTimeout(() => {
+      assert.equal($(renderTarget).find('.count').text(), 'Count: 0');
+
+      $(renderTarget).find('.increment').trigger('click');
+
+      assert.equal($(renderTarget).find('.count').text(), 'Count: 1');
+
+      done();
+    }, 1);
   });
 });
