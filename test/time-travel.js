@@ -14,9 +14,24 @@ function createRenderTarget () {
 }
 
 describe('TimeTravel', () => {
-  it('you can create an instance of TimeTravel', () => {
+  it('can be created', () => {
     function main ({DOM}) {
       const timeTravel = TimeTravel(DOM, []);
+
+      return {DOM: timeTravel.DOM};
+    }
+
+    assert.doesNotThrow(() => {
+      run(main, {DOM: makeDOMDriver(createRenderTarget())});
+    });
+  });
+
+  it('takes streams to control', () => {
+    function main ({DOM}) {
+      const count$ = DOM.select('.count').events('click');
+      const timeTravel = TimeTravel(DOM, [
+        {stream: count$, label: 'count$'}
+      ]);
 
       return {DOM: timeTravel.DOM};
     }
