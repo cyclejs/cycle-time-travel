@@ -10,7 +10,9 @@
     "precompile-lib": "rm -rf lib/ && mkdir -p lib",
     "compile-lib": "babel --optional es7.objectRestSpread src -d lib",
     "browserify": "browserify src/time-travel.js -t babelify --outfile dist/time-travel.js",
-    "prepublish": "npm run compile-lib"
+    "test-browser": "./node_modules/mochify/bin/cmd.js --transform babelify",
+    "prepublish": "npm run compile-lib",
+    "test": "npm run test-browser"
   },
   "repository": {
     "type": "git",
@@ -35,6 +37,9 @@
     "es6-shim": "^0.33.2"
   },
   "devDependencies": {
-    "babel": "^5.8.23"
+    "babel": "^5.8.23",
+    "jquery": "^2.1.4",
+    "mocha": "^2.3.0",
+    "mochify": "^2.13.0"
   }
 }
