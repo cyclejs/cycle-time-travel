@@ -1,3 +1,8 @@
+[![npm version](https://badge.fury.io/js/cycle-time-travel.svg)](http://badge.fury.io/js/cycle-time-travel)
+[![Build Status](https://travis-ci.org/cyclejs/cycle-time-travel.svg?branch=master)](https://travis-ci.org/cyclejs/cycle-time-travel)
+[![Code Climate](https://codeclimate.com/github/cyclejs/cycle-time-travel/badges/gpa.svg)](https://codeclimate.com/github/cyclejs/cycle-time-travel)
+* * * 
+
 # cycle-time-travel
 
 `cycle-time-travel` is a time travelling stream viewer for Cycle.js apps.
