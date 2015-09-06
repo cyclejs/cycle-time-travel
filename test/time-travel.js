@@ -1,15 +1,28 @@
-const test = require('tape');
-const {Rx} = require('@cycle/core');
+/* global describe, it */
+const assert = require('assert');
+
+const {run, Rx} = require('@cycle/core');
 const {makeDOMDriver} = require('@cycle/dom');
 
 const TimeTravel = require('../src/time-travel');
 
-test('you can create an instance of TimeTravel', (t) => {
-  t.plan(1);
+function createRenderTarget () {
+  const element = document.createElement('div');
+  element.className = 'cycletest';
+  document.body.appendChild(element);
+  return element;
+}
 
-  const DOM = makeDOMDriver('.test');
+describe('TimeTravel', () => {
+  it('you can create an instance of TimeTravel', () => {
+    function main ({DOM}) {
+      const timeTravel = TimeTravel(DOM, []);
 
-  const timeTravel = TimeTravel(DOM, []);
+      return {DOM: timeTravel.DOM};
+    }
 
-  t.pass();
+    assert.doesNotThrow(() => {
+      run(main, {DOM: makeDOMDriver(createRenderTarget())});
+    });
+  });
 });
