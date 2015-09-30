@@ -17,8 +17,13 @@ function run (main, drivers) {
   const timeTravelDOMDriver = makeDOMDriver(timeTravelBarNode);
   const [requests, responses] = Cycle.run(main, drivers);
 
+  const streamsToDisplay = [requests.DOM.source].map((stream, index) => (
+    {stream: stream, label: index}
+  ))
+
   const timeTravelMain = function ({DOM}) {
-    const timeTravel = TimeTravel(DOM, [{stream: responses.DOM.select('.increment').events('click'), label: 'requests'}]);
+    const timeTravel = TimeTravel(DOM, streamsToDisplay);
+
     return {DOM: timeTravel.DOM};
   };
 
