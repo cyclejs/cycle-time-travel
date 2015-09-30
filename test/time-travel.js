@@ -17,13 +17,15 @@ function createRenderTarget () {
 describe('TimeTravel', () => {
   it('can be created', () => {
     function main ({DOM}) {
-      const timeTravel = TimeTravel(DOM, []);
-
-      return {DOM: timeTravel.DOM};
+      return {
+        DOM: Rx.Observable.just(5).map(n => (
+          h('.number', n)
+        ))
+      };
     }
 
     assert.doesNotThrow(() => {
-      run(main, {DOM: makeDOMDriver(createRenderTarget())});
+      TimeTravel.run(main, {DOM: makeDOMDriver(createRenderTarget())});
     });
   });
 

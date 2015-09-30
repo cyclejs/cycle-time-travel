@@ -7,6 +7,10 @@ const timeTravelStreams = require('./time-travel-streams');
 const timeTravelBarView = require('./view');
 const scopedDOM = require('./scoped-dom');
 
+function run (main, drivers) {
+
+}
+
 function TimeTravel (DOM, streams, name = '.time-travel') {
   const {timeTravelPosition$, playing$} = intent(scopedDOM(DOM, name));
 
@@ -21,5 +25,7 @@ function TimeTravel (DOM, streams, name = '.time-travel') {
     timeTravel
   };
 }
+
+TimeTravel.run = run;
 
 module.exports = TimeTravel;
