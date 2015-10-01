@@ -17,7 +17,8 @@ function run (main, drivers) {
   const timeTravelDOMDriver = makeDOMDriver(timeTravelBarNode);
   const [requests, responses] = Cycle.run(main, drivers);
 
-  const streamsToDisplay = [requests.DOM.source].concat(requests.DOM.source.sources.s).map((stream, index) => (
+  // TODO - walk tree of stream sources
+  const streamsToDisplay = [requests.DOM.source].map((stream, index) => (
     {stream: stream, label: index.toString()}
   ))
 
