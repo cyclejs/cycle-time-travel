@@ -1,6 +1,6 @@
 const {Rx} = require('@cycle/core');
 
-function timeTravelStreams (streams, time$) {
+function timeTravelStreams (streams$, time$) {
   const timeTravel = {};
 
   streams.forEach((recordedStream, index) => {

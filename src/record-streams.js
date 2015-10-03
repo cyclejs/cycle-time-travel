@@ -18,8 +18,10 @@ function recordStream (streamInfo, time$) {
   return recordedStream;
 }
 
-function recordStreams (streams, time$) {
-  return streams.map(streamInfo => recordStream(streamInfo, time$));
+function recordStreams (streams$, time$) {
+  return streams$.map(streams => {
+    return streams.map(streamInfo => recordStream(streamInfo, time$))
+  });
 }
 
 module.exports = recordStreams;
