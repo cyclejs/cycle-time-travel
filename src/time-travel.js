@@ -9,6 +9,28 @@ const scopedDOM = require('./scoped-dom');
 const Cycle = require('@cycle/core');
 const {makeDOMDriver} = require('@cycle/dom');
 
+function walkObservableTree (stream) {
+  if (stream.sources === undefined && stream.source === undefined) {
+    return [stream];
+  }
+
+  if (stream.sources) {
+    return [stream].concat(...stream.sources.s.map(walkObservableTree));
+  }
+
+  if (stream.source) {
+    return [stream].concat(walkObservableTree(stream.source));
+  }
+}
+
+function accumulatorLabel (accumulator) {
+  return accumulator.toString()
+    .replace(/"use strict";\n\n/g, '')
+    .split('\n')
+    .join('')
+    .replace('  ', '');
+}
+
 function run (main, drivers) {
   const timeTravelBarNode = document.createElement('div');
   document.body.appendChild(timeTravelBarNode);
@@ -33,9 +55,13 @@ function run (main, drivers) {
   const [requests, responses] = Cycle.run(main, drivers);
 
   // TODO - walk tree of stream sources
-  const streamsToDisplay = [requests.DOM.source].map((stream, index) => (
-    {stream: stream, label: index.toString()}
-  ));
+  const streamsToDisplay = walkObservableTree(requests.DOM.source).map((stream, index) => {
+    if (stream.accumulator) {
+      return {stream: stream, label: accumulatorLabel(stream.accumulator)};
+    }
+
+    return {stream: stream, label: index.toString()};
+  });
 
   setTimeout(() => {
     streamsToDisplay$.onNext(streamsToDisplay);
