@@ -17,15 +17,14 @@ function view (count$) {
 }
 
 function model ({increment$, decrement$}) {
-  const action$ = Rx.Observable.merge(
+  const countChange$ = Rx.Observable.merge(
     increment$.map(_ => +1),
     decrement$.map(_ => -1)
   );
 
-  const count$ = action$.scan((count, value) => count + value)
+  return countChange$
+    .scan((count, change) => count + change)
     .startWith(0);
-
-  return {count$, action$};
 }
 
 function intent (DOM) {
@@ -36,13 +35,8 @@ function intent (DOM) {
 }
 
 function main ({DOM}) {
-  const userIntent = intent(DOM);
-  const {count$, action$} = model(userIntent);
-
-  const app = view(count$);
-
   return {
-    DOM: app
+    DOM: view(model(intent(DOM)))
   };
 }
 
