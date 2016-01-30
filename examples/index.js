@@ -1,5 +1,6 @@
-const {Rx, run} = require('@cycle/core');
+const {run} = require('@cycle/core');
 const {h, makeDOMDriver} = require('@cycle/dom');
+const {Observable} = require('rx');
 const TimeTravel = require('../src/time-travel');
 
 require('babel/register');
@@ -17,7 +18,7 @@ function view (count$) {
 }
 
 function model ({increment$, decrement$}) {
-  const countChange$ = Rx.Observable.merge(
+  const countChange$ = Observable.merge(
     increment$.map(_ => +1),
     decrement$.map(_ => -1)
   );

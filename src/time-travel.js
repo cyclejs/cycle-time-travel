@@ -5,9 +5,11 @@ const makeTime$ = require('./time');
 const record = require('./record-streams');
 const timeTravelBarView = require('./view');
 const scopedDOM = require('./scoped-dom');
+const {restart, restartable} = require('cycle-restart');
 
 const Cycle = require('@cycle/core');
 const {makeDOMDriver} = require('@cycle/dom');
+const {Subject} = require('rx');
 
 function walkObservableTree (stream) {
   if (stream.sources === undefined && stream.source === undefined) {
@@ -37,25 +39,45 @@ function run (main, drivers) {
 
   const timeTravelDOMDriver = makeDOMDriver(timeTravelBarNode);
 
-  const streamsToDisplay$ = new Cycle.Rx.Subject();
+  const streamsToDisplay$ = new Subject();
 
   const timeTravelMain = function ({DOM}) {
     const timeTravel = TimeTravel(DOM, streamsToDisplay$.startWith([]));
 
     return {
       DOM: timeTravel.DOM,
-      TIME: timeTravel.time$
+      TIME: timeTravel.time$,
+      restart$: timeTravel.restart$
     };
   };
 
-  const [timeRequests, timeResponses] = Cycle.run(timeTravelMain, {DOM: timeTravelDOMDriver});
+  const {sources: timeSources, sinks: timeSinks} = Cycle.run(timeTravelMain, {DOM: timeTravelDOMDriver});
 
-  drivers.DOM.enableTimeTravel(timeRequests.TIME);
+  const restartableDrivers = {};
 
-  const [requests, responses] = Cycle.run(main, drivers);
+  Object.keys(drivers).forEach(driverName => {
+    let args = {};
+
+    if (driverName === 'DOM') {
+      args = {pauseSinksWhileReplaying: false};
+    }
+
+    restartableDrivers[driverName] = restartable(drivers[driverName], args);
+  });
+
+  let {sources, sinks} = Cycle.run(main, restartableDrivers);
+  
+  const startTime = new Date();
+
+  timeSinks.restart$.withLatestFrom(timeSinks.TIME).subscribe(([relative, time]) => {
+    console.log(startTime.valueOf() + time);
+    const blah = restart(main, restartableDrivers, {sources, sinks}, startTime.valueOf() + time)
+    sinks = blah.sinks
+    sources = blah.sources
+  });
 
   // TODO - walk tree of stream sources
-  const streamsToDisplay = walkObservableTree(requests.DOM.source).map((stream, index) => {
+  const streamsToDisplay = walkObservableTree(sinks.DOM.source).map((stream, index) => {
     if (stream.accumulator) {
       return {stream: stream, label: accumulatorLabel(stream.accumulator)};
     }
@@ -67,7 +89,7 @@ function run (main, drivers) {
     streamsToDisplay$.onNext(streamsToDisplay);
   }, 1);
 
-  return [requests, responses];
+  return {sinks, sources};
 }
 
 function TimeTravel (DOM, streams$, name = '.time-travel') {
@@ -75,11 +97,13 @@ function TimeTravel (DOM, streams$, name = '.time-travel') {
 
   const time$ = makeTime$(playing$, timeTravelPosition$);
 
+  const restart$ = timeTravelPosition$.distinctUntilChanged().debounce(100).skip(1);
   const recordedStreams$ = record(streams$, time$);
 
   return {
     DOM: timeTravelBarView(name, time$, playing$, recordedStreams$),
-    time$
+    time$,
+    restart$
   };
 }
 
