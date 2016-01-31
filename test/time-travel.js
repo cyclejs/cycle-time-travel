@@ -2,8 +2,9 @@
 const assert = require('assert');
 const $ = require('jquery');
 
-const {run, Rx} = require('@cycle/core');
+const {run} = require('@cycle/core');
 const {h, makeDOMDriver} = require('@cycle/dom');
+const {Observable} = require('rx');
 
 const TimeTravel = require('../src/time-travel');
 
@@ -34,7 +35,7 @@ function createRenderTarget () {
 describe('TimeTravel', () => {
   it('can be paused', (done) => {
     function pauseMain ({DOM}) {
-      return {DOM: Rx.Observable.just(1).map(n => h('.count', n))};
+      return {DOM: Observable.just(1).map(n => h('.count', n))};
     }
 
     const renderTarget = createRenderTarget();
