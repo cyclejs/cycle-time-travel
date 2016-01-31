@@ -1,6 +1,7 @@
-const {Rx, run} = require('@cycle/core');
+const {run} = require('@cycle/core');
 const {h, makeDOMDriver} = require('@cycle/dom');
-const logStreams = require('../src/time-travel');
+const {Observable} = require('rx');
+const TimeTravel = require('../src/time-travel');
 
 require('babel/register');
 
@@ -17,15 +18,14 @@ function view (count$) {
 }
 
 function model ({increment$, decrement$}) {
-  const action$ = Rx.Observable.merge(
+  const countChange$ = Observable.merge(
     increment$.map(_ => +1),
     decrement$.map(_ => -1)
   );
 
-  const count$ = action$.scan((count, value) => count + value)
+  return countChange$
+    .scan((count, change) => count + change)
     .startWith(0);
-
-  return {count$, action$};
 }
 
 function intent (DOM) {
@@ -36,22 +36,8 @@ function intent (DOM) {
 }
 
 function main ({DOM}) {
-  const userIntent = intent(DOM);
-  const {count$, action$} = model(userIntent);
-
-  const logStream = logStreams(DOM, [
-    {stream: count$, label: 'count$'},
-    {stream: action$, label: 'action$'}
-  ]);
-
-  const app = view(logStream.timeTravel.count$);
-
   return {
-    DOM: Rx.Observable.combineLatest(app, logStream.DOM)
-      .map(vtrees => (
-        h('.app', vtrees)
-      )
-    )
+    DOM: view(model(intent(DOM)))
   };
 }
 
@@ -59,5 +45,4 @@ const drivers = {
   DOM: makeDOMDriver('.cycle')
 };
 
-run(main, drivers);
-
+TimeTravel.run(main, drivers);

@@ -15,7 +15,15 @@ function renderFeatureValue (value) {
 }
 
 function renderValue (value) {
+  if (typeof value === 'object' && 'subscribe' in value) {
+    return '$';
+  }
+
+  try {
   return JSON.stringify(value, null, 0);
+  } catch (e) {
+    return 'E!' + e.message;
+  }
 }
 
 function renderStreamValue (currentTime, feature, streamValue) {

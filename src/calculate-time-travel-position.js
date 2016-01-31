@@ -1,4 +1,4 @@
-const {Rx} = require('@cycle/core');
+const {Observable} = require('rx');
 
 function calculateTimestamp (mouseX) {
   return mouseX / document.documentElement.clientWidth * 10000;
@@ -26,7 +26,7 @@ function makeTimeTravelPosition$ (mousePosition$, dragging$) {
     dragging: false
   };
 
-  const currentPositionAndDragState$ = Rx.Observable.combineLatest(
+  const currentPositionAndDragState$ = Observable.combineLatest(
     mousePosition$,
     dragging$,
     (mousePosition, dragging) => ({ mousePosition, dragging })

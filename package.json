@@ -31,10 +31,11 @@
   },
   "homepage": "https://github.com/Widdershin/cycle-time-travel",
   "dependencies": {
-    "@cycle/core": "3.1.0",
-    "@cycle/dom": "5.3.0",
-    "@cycle/http": "3.1.0",
-    "es6-shim": "0.33.3"
+    "@cycle/core": "^6.0.0",
+    "@cycle/dom": "^9.0.2",
+    "cycle-restart": "0.0.8",
+    "es6-shim": "0.33.3",
+    "rx": "^4.0.7"
   },
   "devDependencies": {
     "babel": "5.8.23",
@@ -42,6 +43,7 @@
     "browserify": "^11.2.0",
     "jquery": "2.1.4",
     "mocha": "2.3.3",
-    "mochify": "2.13.0"
+    "mochify": "2.13.0",
+    "simulant": "^0.1.5"
   }
 }

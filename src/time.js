@@ -1,4 +1,4 @@
-const {Rx} = require('@cycle/core');
+const {Observable} = require('rx');
 
 function getCurrentTime () {
   return new Date().getTime();
@@ -6,8 +6,8 @@ function getCurrentTime () {
 
 function makeTime$ (playing$, timeTravelPosition$) {
   // TODO - use requestAnimationFrame scheduler
-  return Rx.Observable.combineLatest(
-      Rx.Observable.interval(16),
+  return Observable.combineLatest(
+      Observable.interval(16),
       playing$,
       (_, playing) => (playing)
     ).scan((oldTime, playing) => {
