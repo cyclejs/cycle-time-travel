@@ -33,7 +33,7 @@
   "dependencies": {
     "@cycle/core": "^6.0.0",
     "@cycle/dom": "^9.0.2",
-    "cycle-restart": "0.0.6",
+    "cycle-restart": "0.0.8",
     "es6-shim": "0.33.3",
     "rx": "^4.0.7"
   },
