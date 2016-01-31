@@ -11,7 +11,7 @@ function getMousePosition (ev) {
 function intent (DOM) {
   const mousePosition$ = DOM.select('.stream').events('mousemove')
     .map(getMousePosition)
-    .startWith({x: 0, y: 0});
+    .startWith({x: 0, y: 0})
 
   const click$ = DOM.select('.stream').events('mousedown');
   const release$ = Observable.fromEvent(document.body, 'mouseup');

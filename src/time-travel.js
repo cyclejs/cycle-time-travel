@@ -66,17 +66,17 @@ function run (main, drivers) {
   });
 
   let {sources, sinks} = Cycle.run(main, restartableDrivers);
-  
+
   const startTime = new Date();
 
   timeSinks.restart$.withLatestFrom(timeSinks.TIME).subscribe(([relative, time]) => {
-    console.log(startTime.valueOf() + time);
-    const blah = restart(main, restartableDrivers, {sources, sinks}, startTime.valueOf() + time)
+    console.log('honking good time', relative, new Date());
+    const timeToTravelTo = startTime.valueOf() + time
+    const blah = restart(main, restartableDrivers, {sources, sinks}, null, new Date(timeToTravelTo))
     sinks = blah.sinks
     sources = blah.sources
   });
 
-  // TODO - walk tree of stream sources
   const streamsToDisplay = walkObservableTree(sinks.DOM.source).map((stream, index) => {
     if (stream.accumulator) {
       return {stream: stream, label: accumulatorLabel(stream.accumulator)};
@@ -97,7 +97,7 @@ function TimeTravel (DOM, streams$, name = '.time-travel') {
 
   const time$ = makeTime$(playing$, timeTravelPosition$);
 
-  const restart$ = timeTravelPosition$.distinctUntilChanged().debounce(100).skip(1);
+  const restart$ = timeTravelPosition$.distinctUntilChanged().debounce(300).skip(1);
   const recordedStreams$ = record(streams$, time$);
 
   return {

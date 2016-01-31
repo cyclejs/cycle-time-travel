@@ -8,6 +8,8 @@ const {Observable} = require('rx');
 
 const TimeTravel = require('../src/time-travel');
 
+const simulant = require('simulant');
+
 function MouseEvent(type, dict) {
   var e = document.createEvent("MouseEvents");
 
@@ -109,26 +111,31 @@ describe('TimeTravel', () => {
     TimeTravel.run(main, {DOM: makeDOMDriver(renderTarget)});
 
     setTimeout(() => {
+      console.log('begin');
       $(renderTarget).find('.increment').trigger('click');
+      setTimeout(() => {
+        $(renderTarget).find('.increment').trigger('click');
 
-      assert.equal($(renderTarget).find('.count').text(), 'Count: 1');
+        assert.equal($(renderTarget).find('.count').text(), 'Count: 2');
 
-      $('.pause').trigger('click');
+        $('.pause').trigger('click');
 
-      $('.stream').trigger('mousedown');
+        $('.stream').trigger('mousedown');
 
-      const streams = document.querySelectorAll('.stream');
-      const lastStream = streams[streams.length - 1];
+        const streams = document.querySelectorAll('.stream');
+        const lastStream = streams[streams.length - 1];
 
-      lastStream.dispatchEvent(new MouseEvent('mousemove', {clientX: 500, clientY: 0}));
+        simulant.fire(lastStream, 'mousemove', {clientX: 800, clientY: 0});
 
-      lastStream.dispatchEvent(new MouseEvent('mousedown'));
+        simulant.fire(lastStream, 'mousedown');
+        simulant.fire(lastStream, 'mousemove', {clientX: 820, clientY: 0});
 
-      lastStream.dispatchEvent(new MouseEvent('mousemove', {clientX: 0, clientY: 0}));
+        setTimeout(() => {
+          assert.equal($(renderTarget).find('.count').text(), 'Count: 1');
 
-      assert.equal($(renderTarget).find('.count').text(), 'Count: 0');
-
-      done();
+          done();
+        }, 400)
+      }, 1400);
     }, 1);
   });
 });
