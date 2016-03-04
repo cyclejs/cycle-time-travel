@@ -1,7 +1,9 @@
 const {h} = require('@cycle/dom');
 
+const startDate = new Date();
+
 function calculateValuePosition (startPercentage, currentTime, streamValue) {
-  const occurrenceTimeAgoInMs = currentTime - streamValue.timestamp;
+  const occurrenceTimeAgoInMs = currentTime + (startDate.valueOf() - streamValue.time.valueOf());
 
   return (startPercentage - (occurrenceTimeAgoInMs / 10000) * startPercentage);
 }
@@ -19,8 +21,12 @@ function renderValue (value) {
     return '$';
   }
 
+  if (typeof value === 'object' && 'isTrusted' in value) {
+    return 'ev';
+  }
+
   try {
-  return JSON.stringify(value, null, 0);
+    return JSON.stringify(value, null, 0);
   } catch (e) {
     return 'E!' + e.message;
   }
@@ -38,7 +44,7 @@ function renderStreamValue (currentTime, feature, streamValue) {
   return (
     h('pre.stream-value',
       {style: {left: left + '%'}},
-      valueRenderer(streamValue.value)
+      valueRenderer(streamValue.event)
     )
   );
 }

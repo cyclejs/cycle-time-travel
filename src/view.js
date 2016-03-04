@@ -5,6 +5,7 @@ const renderStreams = require('./render-streams');
 const stylesheet = require('./style');
 
 function timeTravelBarView (name, time$, playing$, recordedStreams$) {
+  console.log(recordedStreams$);
   return Observable.combineLatest(time$, playing$, recordedStreams$.flatMapLatest(Observable.combineLatest),
     (currentTime, playing, streamValues) => {
       return h(name, [

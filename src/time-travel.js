@@ -75,15 +75,23 @@ function run (main, drivers) {
     const blah = restart(main, restartableDrivers, {sources, sinks}, null, new Date(timeToTravelTo))
     sinks = blah.sinks
     sources = blah.sources
+
+    const streamsToDisplay = [sources.DOM.log$.tap(log => log.label = 'DOM')];
+
+    setTimeout(() => {
+      streamsToDisplay$.onNext(streamsToDisplay);
+    }, 1);
   });
 
-  const streamsToDisplay = walkObservableTree(sinks.DOM.source).map((stream, index) => {
-    if (stream.accumulator) {
-      return {stream: stream, label: accumulatorLabel(stream.accumulator)};
-    }
+  //const streamsToDisplay = walkObservableTree(sinks.DOM.source).map((stream, index) => {
+  //  if (stream.accumulator) {
+  //    return {stream: stream, label: accumulatorLabel(stream.accumulator)};
+  //  }
+//
+//    return {stream: stream, label: index.toString()};
+//  });
 
-    return {stream: stream, label: index.toString()};
-  });
+    const streamsToDisplay = [sources.DOM.log$.tap(log => log.label = 'DOM')];
 
   setTimeout(() => {
     streamsToDisplay$.onNext(streamsToDisplay);
@@ -97,11 +105,11 @@ function TimeTravel (DOM, streams$, name = '.time-travel') {
 
   const time$ = makeTime$(playing$, timeTravelPosition$);
 
-  const restart$ = timeTravelPosition$.distinctUntilChanged().debounce(300).skip(1);
+  const restart$ = timeTravelPosition$.distinctUntilChanged().sample(50).skip(1);
   const recordedStreams$ = record(streams$, time$);
 
   return {
-    DOM: timeTravelBarView(name, time$, playing$, recordedStreams$),
+    DOM: timeTravelBarView(name, time$, playing$, streams$),
     time$,
     restart$
   };
