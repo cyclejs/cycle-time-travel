@@ -8,7 +8,7 @@
   },
   "scripts": {
     "precompile-lib": "rm -rf lib/ && mkdir -p lib",
-    "compile-lib": "babel --optional es7.objectRestSpread src -d lib",
+    "compile-lib": "babel src -d lib",
     "browserify": "browserify src/time-travel.js -t babelify --outfile dist/time-travel.js",
     "test-browser": "./node_modules/mochify/bin/cmd.js --transform babelify",
     "prepublish": "npm run compile-lib",
@@ -38,7 +38,7 @@
     "rx": "^4.0.7"
   },
   "devDependencies": {
-    "babel": "5.8.23",
+    "babel-cli": "^6.6.5",
     "babel-core": "^6.5.2",
     "babel-plugin-transform-object-rest-spread": "^6.5.0",
     "babel-preset-es2015": "^6.5.0",
