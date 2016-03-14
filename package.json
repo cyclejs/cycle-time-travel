@@ -35,6 +35,7 @@
     "@cycle/dom": "^9.0.2",
     "cycle-restart": "0.0.8",
     "es6-shim": "0.33.3",
+    "lodash": "^4.6.1",
     "rx": "^4.0.7"
   },
   "devDependencies": {

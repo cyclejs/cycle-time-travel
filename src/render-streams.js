@@ -1,4 +1,5 @@
 const {h} = require('@cycle/dom');
+const _ = require('lodash');
 
 const startDate = new Date();
 
@@ -66,8 +67,20 @@ function renderStream (currentTime, streamValues, even) {
 }
 
 function renderStreams (currentTime, ...streamValues) {
-  return h('.streams', streamValues.map((streamValueSet, index) =>
-    renderStream(currentTime, streamValueSet, index % 2 == 0)
+  const streamsToRender = streamValues.map((streamValueSet) => {
+    const groupedStreams = _.groupBy(streamValueSet, 'identifier');
+
+    return Object.keys(groupedStreams).map(identifier => {
+      const stream = groupedStreams[identifier];
+
+      stream.label = identifier;
+
+      return stream;
+    });
+  });
+
+  return h('.streams', _.flatten(streamsToRender).map((streamValueSet, index) =>
+    renderStream(currentTime, streamValueSet, index % 2 === 0)
   ));
 }
 
