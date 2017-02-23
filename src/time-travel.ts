@@ -5,11 +5,31 @@ import {makeDOMDriver, div, pre, button} from '@cycle/dom';
 import sampleCombine from 'xstream/extra/sampleCombine';
 import concat from 'xstream/extra/concat';
 
+function delta (stream: Stream<number>): Stream<number> {
+  const state = {
+    lastValue: null,
+    delta: 0
+  }
+
+  function calculateDelta ({lastValue, delta}, value) {
+    if (lastValue === null) {
+      return {
+        lastValue: value,
+        delta
+      }
+    }
+    return {
+      lastValue: value,
+      delta: value - lastValue
+    }
+  }
+
+  return stream.fold(calculateDelta, state).drop(1).map(state => state.delta);
+}
 // First of all, let's use Time to display a graph of goodness
-//
 function streamGraph (sinks) {
   return Object.keys(sinks).map(key =>
-    flatten(walkStreamGraph(sinks[key]))
+    flatten(walkStreamGraph(sinks[key])).reverse()
   );
 }
 
@@ -57,9 +77,9 @@ function displayEntry (entry) {
   return typeof entry.value;
 }
 
-function renderEntry (time, entry) {
-  const timeAgo = time.time - entry.time;
-  const right = `${timeAgo / 10}px`;
+function renderEntry (time, offsetTime, entry) {
+  const timeAgo = time.time - (offsetTime * 10) - entry.time;
+  const right = `${(timeAgo + 800) / 10}px`;
 
   return (
     div(
@@ -77,13 +97,29 @@ const logStyle = {
   'border-top': '1px solid #AAA'
 }
 
-function renderLog (time, log) {
+function renderLog (time, offsetTime, log) {
   return (
-    div('.log', {style: logStyle}, log.map(entry => renderEntry(time, entry)))
+    div('.log', {style: logStyle}, log.map(entry => renderEntry(time, offsetTime, entry)))
   );
 }
 
+const nowMarkerStyle = {
+  'position': 'absolute',
+  'height': '100%',
+  'width': '1px',
+  'background': 'darkred',
+  'right': '11%',
+  'z-index': '10'
+}
+
+function renderNowMarker () {
+  return (
+    div('.now-marker', {style: nowMarkerStyle})
+  )
+}
+
 const logsStyle = {
+  'position': 'relative',
   'display': 'flex',
   'flex-direction': 'column'
 };
@@ -95,14 +131,17 @@ const timeTravelStyle = {
   'width': '100vw',
 }
 
-function renderRecordedStreams (Time, streams, playing$) {
+function renderRecordedStreams (Time, streams, playing$, offsetTime$) {
   const time$ = Time.animationFrames();
 
-  return xs.combine(time$, streams, playing$).map(([time, logs, playing]) => {
+  return xs.combine(time$, streams, playing$, offsetTime$).map(([time, logs, playing, offsetTime]) => {
     return (
       div('.time-travel', {style: timeTravelStyle}, [
         button('.pause', playing ? 'Pause' : 'Play'),
-        div('.logs', {style: logsStyle}, (logs as Array<any>).map(log => renderLog(time, log)))
+        div('.logs', {style: logsStyle}, [
+          renderNowMarker(),
+          ...(logs as Array<any>).map(log => renderLog(time, offsetTime, log))
+        ])
       ])
     );
   });
@@ -135,6 +174,23 @@ function run (app, drivers) {
       .select('document')
       .events('mouseup');
 
+    const mouseMove$ = sources.DOM
+      .select('document')
+      .events('mousemove');
+
+    const changeTime$ = pauseByBarMousedown$
+      .map(() =>
+        mouseMove$.map(ev => ev.clientX)
+          .compose(delta)
+          .fold((acc, val) => acc + val, 0)
+          .endWhen(mouseUp$)
+      )
+
+    const offsetTime$ = changeTime$
+      .map(stream => concat(stream, xs.of(0)))
+      .flatten()
+      .startWith(0);
+
     const doTheThing$ = pauseByBarMousedown$.map(() => {
         return concat(
           concat(xs.of((playing: boolean): boolean => false), xs.never()).endWhen(mouseUp$),
@@ -160,12 +216,20 @@ function run (app, drivers) {
       });
 
     return {
-      DOM: renderRecordedStreams(Time, allTheStreams, playing$)
+      DOM: renderRecordedStreams(Time, allTheStreams, playing$, offsetTime$),
+      ChangeTime: changeTime$.map(stream => stream.last()).flatten()
     }
   }
 
   const innerDrivers = {
-    DOM: makeDOMDriver('.tools')
+    DOM: makeDOMDriver('.tools'),
+    ChangeTime: (stream) => {
+      stream.addListener({
+        next (ev) {
+          console.log(ev);
+        }
+      });
+    }
   }
 
   originalRun(InnerApp, innerDrivers).run();
