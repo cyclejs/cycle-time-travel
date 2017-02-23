@@ -1,7 +1,7 @@
 import {setup as originalRun} from '@cycle/run';
 import xs from 'xstream';
 import {timeDriver} from '@cycle/time';
-import {makeDOMDriver, div, pre} from '@cycle/dom';
+import {makeDOMDriver, div, pre, button} from '@cycle/dom';
 import sampleCombine from 'xstream/extra/sampleCombine';
 
 // First of all, let's use Time to display a graph of goodness
@@ -40,7 +40,7 @@ const entryStyle = {
   'font-family': 'sans-serif',
   'border-radius': '15px',
   'background': '#DDD',
-  'border': '1px solid #CCC',
+  'border': '1px solid #999',
   'text-align': 'center'
 }
 
@@ -83,20 +83,26 @@ function renderLog (time, log) {
 }
 
 const logsStyle = {
-  'position': 'absolute',
-  'bottom': '0px',
-  'left': '0px',
-  'width': '100vw',
   'display': 'flex',
   'flex-direction': 'column'
 };
 
-function renderRecordedStreams (Time, streams) {
+const timeTravelStyle = {
+  'position': 'absolute',
+  'bottom': '0px',
+  'left': '0px',
+  'width': '100vw',
+}
+
+function renderRecordedStreams (Time, streams, playing$) {
   const time$ = Time.animationFrames();
 
-  return time$.compose(sampleCombine(streams)).map(([time, logs]) => {
+  return xs.combine(time$, streams, playing$).map(([time, logs, playing]) => {
     return (
-      div('.logs', {style: logsStyle}, logs.map(log => renderLog(time, log)))
+      div('.time-travel', {style: timeTravelStyle}, [
+        button('.pause', playing ? 'Pause' : 'Play'),
+        div('.logs', {style: logsStyle}, (logs as Array<any>).map(log => renderLog(time, log)))
+      ])
     );
   });
 }
@@ -110,11 +116,27 @@ function run (app, drivers) {
 
   const awesomeStreams = streamGraph(stuff.sinks);
 
-  function InnerApp () {
+  function InnerApp (sources) {
     const allTheStreams = xs.combine(...awesomeStreams[0].map(Time.record))
 
+    let time = 0;
+
+    const playing$ = sources.DOM
+      .select('.pause')
+      .events('click')
+      .fold((playing) => !playing, true)
+      .debug(playing => {
+        if (playing) {
+          Time['_resume'](time);
+        } else {
+          Time['_pause']();
+        }
+
+        time = Time['_time']();
+      });
+
     return {
-      DOM: renderRecordedStreams(Time, allTheStreams)
+      DOM: renderRecordedStreams(Time, allTheStreams, playing$)
     }
   }
 
