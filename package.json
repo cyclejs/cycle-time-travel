@@ -38,8 +38,11 @@
   },
   "devDependencies": {
     "browserify": "^11.2.0",
+    "budo": "^9.4.7",
     "jquery": "2.1.4",
     "mocha": "2.3.3",
-    "mochify": "2.13.0"
+    "mochify": "2.13.0",
+    "tsify": "^3.0.1",
+    "typescript": "^2.2.1"
   }
 }
