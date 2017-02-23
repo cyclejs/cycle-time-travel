@@ -1,8 +1,9 @@
 import {setup as originalRun} from '@cycle/run';
-import xs from 'xstream';
+import xs, {Stream} from 'xstream';
 import {timeDriver} from '@cycle/time';
 import {makeDOMDriver, div, pre, button} from '@cycle/dom';
 import sampleCombine from 'xstream/extra/sampleCombine';
+import concat from 'xstream/extra/concat';
 
 // First of all, let's use Time to display a graph of goodness
 //
@@ -121,10 +122,33 @@ function run (app, drivers) {
 
     let time = 0;
 
-    const playing$ = sources.DOM
+    const togglePlaying$ = sources.DOM
       .select('.pause')
       .events('click')
-      .fold((playing) => !playing, true)
+      .mapTo(playing => !playing);
+
+    const pauseByBarMousedown$ = sources.DOM
+      .select('.logs')
+      .events('mousedown')
+
+    const mouseUp$ = sources.DOM
+      .select('document')
+      .events('mouseup');
+
+    const doTheThing$ = pauseByBarMousedown$.map(() => {
+        return concat(
+          concat(xs.of((playing: boolean): boolean => false), xs.never()).endWhen(mouseUp$),
+          xs.of((playing: boolean): boolean => true)
+        )
+      }
+    ).flatten();
+
+    const playingReducer$ = xs.merge(
+      togglePlaying$,
+      doTheThing$
+    );
+
+    const playing$ = playingReducer$.fold((playing, reducer: (playing: boolean) => boolean) => reducer(playing), true)
       .debug(playing => {
         if (playing) {
           Time['_resume'](time);
