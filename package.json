@@ -34,6 +34,7 @@
     "@cycle/dom": "^15.0.0",
     "@cycle/run": "^1.0.0",
     "@cycle/time": "^0.7.1",
+    "cycle-restart": "^0.1.0",
     "es6-shim": "0.33.3"
   },
   "devDependencies": {

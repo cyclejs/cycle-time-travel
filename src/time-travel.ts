@@ -4,6 +4,7 @@ import {timeDriver} from '@cycle/time';
 import {makeDOMDriver, div, pre, button} from '@cycle/dom';
 import sampleCombine from 'xstream/extra/sampleCombine';
 import concat from 'xstream/extra/concat';
+import {rerunner} from 'cycle-restart'
 
 function delta (stream: Stream<number>): Stream<number> {
   const state = {
@@ -152,7 +153,9 @@ function run (app, drivers) {
 
   drivers.Time = () => Time;
 
-  const stuff = originalRun(app, drivers);
+  const rerun = rerunner(originalRun, drivers);
+
+  const stuff = rerun(app);
 
   const awesomeStreams = streamGraph(stuff.sinks);
 
@@ -226,15 +229,13 @@ function run (app, drivers) {
     ChangeTime: (stream) => {
       stream.addListener({
         next (ev) {
-          console.log(ev);
+          rerun(app, () => {}, Time['_time']() - ev * 10);
         }
       });
     }
   }
 
   originalRun(InnerApp, innerDrivers).run();
-
-  stuff.run();
 }
 
 export {

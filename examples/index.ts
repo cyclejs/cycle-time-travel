@@ -2,6 +2,7 @@ import {run} from '../src/time-travel';
 import {makeDOMDriver, div, span, button} from '@cycle/dom';
 import {timeDriver} from '@cycle/time';
 import xs, {Stream} from 'xstream';
+import {restartable} from 'cycle-restart'
 
 function renderCounter (count) {
   return (
@@ -37,9 +38,10 @@ function main ({DOM}) {
   };
 }
 
-const drivers = {
-  DOM: makeDOMDriver('.cycle')
-};
+const makeDrivers = () => ({
+  DOM: restartable(makeDOMDriver('.cycle'), {pauseSinksWhileReplaying: false}),
+  Time: timeDriver
+});
 
-run(main, drivers);
+run(main, makeDrivers);
 
