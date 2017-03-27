@@ -148,12 +148,18 @@ function renderRecordedStreams (Time, streams, playing$, offsetTime$) {
   });
 }
 
-function run (app, drivers) {
+function run (app, makeDrivers) {
   const Time = timeDriver(null, null);
 
-  drivers.Time = () => Time;
+  const newMakeDrivers = () => {
+    const drivers = makeDrivers();
 
-  const rerun = rerunner(originalRun, drivers);
+    drivers.Time = () => Time;
+
+    return drivers;
+  }
+
+  const rerun = rerunner(originalRun, newMakeDrivers);
 
   const stuff = rerun(app);
 
